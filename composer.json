@@ -24,7 +24,7 @@
 	},
 	"minimum-stability": "dev",
 	"suggest": {
-		"redcatphp/ding": "Use Dependency Injection Container for registry",
+		"redcatphp/strategy": "Use Dependency Injection Container for registry",
 		"redcatphp/debug": "For pretty debug"
 	}
 }
