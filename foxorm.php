@@ -8209,14 +8209,14 @@ class MainDb implements \ArrayAccess {
 #F.php
 
 namespace FoxORM {
-use RedCat\Ding\Di;
+use RedCat\Strategy\Di;
 class F{
 	protected static $bases;
 	protected static $currentDataSource;
-	static $useDingDi = true;
+	static $useStrategyDi = true;
 	static function _init(){
 		if(!isset(self::$bases)){
-			if(class_exists(Di::class)&&self::$useDingDi){
+			if(class_exists(Di::class)&&self::$useStrategyDi){
 				self::$bases = Di::getInstance()->create(Bases::class);
 				if(isset(self::$bases[0]))
 					self::selectDatabase(0);
