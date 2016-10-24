@@ -1,0 +1,30 @@
+{
+	"name": "foxorm/foxorm",
+	"type": "library",
+	"description": "FoxORM - The PHP full-featured ORM",
+	"keywords": ["FoxORM","ORM","DataBase","DataMapper","Relational","Model","NoSQL","RDBMS"],
+	"license": ["MIT"],
+	"homepage": "http://foxorm.com",
+	"authors": [
+		{
+			"name": "Jo Surikat",
+			"email": "jo@surikat.pro",
+			"homepage": "http://surikat.pro",
+			"role": "Developer"
+		}
+	],
+	"require": {
+		"php": ">=5.5.9",
+		"jdorn/sql-formatter": "^1.2"
+	},
+	"autoload": {
+		"psr-4":{
+			"FoxORM\\": "src"
+		}
+	},
+	"minimum-stability": "dev",
+	"suggest": {
+		"redcatphp/ding": "Use Dependency Injection Container for registry",
+		"redcatphp/debug": "For pretty debug"
+	}
+}

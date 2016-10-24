@@ -1,0 +1,834 @@
+<?php
+namespace FoxORM;
+use FoxORM\Helper\CaseConvert;
+use FoxORM\Entity\StateFollower;
+use FoxORM\Entity\Box;
+use FoxORM\Entity\Observer;
+abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
+	const DEBUG_OFF = 0;
+	const DEBUG_ERROR = 1;
+	const DEBUG_QUERY = 2;
+	const DEBUG_RESULT = 4;
+	const DEBUG_SPEED = 8;
+	const DEBUG_EXPLAIN = 16;
+	const DEBUG_SYSTEM = 32;
+	const DEBUG_DEFAULT = 1;
+	const DEBUG_ON = 31;
+	protected $bases;
+	protected $type;
+	protected $modelClassSuffix = '_Row';
+	protected $modelClassPrefix;
+	protected $entityClassDefault;
+	protected $tableWrapperClassDefault;
+	protected $primaryKey;
+	protected $uniqTextKey;
+	protected $primaryKeys;
+	protected $uniqTextKeys;
+	protected $many2manyPrefix;
+	protected $tableMap = [];
+	protected $entityFactory;
+	protected $tableWrapperFactory;
+	protected $recursiveStorageOpen = [];
+	protected $recursiveStorageClose = [];
+	protected $tablesList = [];
+	protected $debugLevel;
+	protected $performingSystemQuery = false;
+	protected $performingOptionalQuery = false;
+	function __construct(Bases $bases,$type,$modelClassPrefix='Model\\',$entityClassDefault='stdClass',$primaryKey='id',$uniqTextKey='uniq',array $primaryKeys=[],array $uniqTextKeys=[],$many2manyPrefix='',$tableWrapperClassDefault=false,$debugLevel=self::DEBUG_DEFAULT,array $config=[]){
+		$this->bases = $bases;
+		$this->type = $type;
+		$this->modelClassPrefix = (array)$modelClassPrefix;
+		$this->entityClassDefault = $entityClassDefault;
+		$this->tableWrapperClassDefault = $tableWrapperClassDefault;
+		$this->primaryKey = $primaryKey;
+		$this->uniqTextKey = $uniqTextKey;
+		$this->primaryKeys = $primaryKeys;
+		$this->uniqTextKeys = $uniqTextKeys;
+		$this->many2manyPrefix = $many2manyPrefix;
+		$this->debugLevel = $debugLevel;
+		$this->construct($config);
+	}
+	function getType(){
+		return $this->type;
+	}
+	function getUniqTextKey(){
+		return $this->uniqTextKey;
+	}
+	function getPrimaryKey(){
+		return $this->primaryKey;
+	}
+	function setUniqTextKey($uniqTextKey='uniq'){
+		$this->uniqTextKey = $uniqTextKey;
+	}
+	function setPrimaryKey($primaryKey='id'){
+		$this->primaryKey = $primaryKey;
+	}
+	
+	function getUniqTextKeys(){
+		return $this->uniqTextKeys;
+	}
+	function getPrimaryKeys(){
+		return $this->primaryKeys;
+	}
+	function getMany2manyPrefix(){
+		return $this->many2manyPrefix;
+	}
+	function setMany2manyPrefix($many2manyPrefix=''){
+		$this->many2manyPrefix = $many2manyPrefix;
+	}
+	function setUniqTextKeys(array $uniqTextKeys=[]){
+		$this->uniqTextKeys = $uniqTextKeys;
+	}
+	function setPrimaryKeys(array $primaryKeys=[]){
+		$this->primaryKeys = $primaryKeys;
+	}
+	function findTableWrapperClass($name=null,$tableWrapper=null){
+		if($name){
+			$name = CaseConvert::ucw($name);
+			foreach($this->modelClassPrefix as $prefix){
+				$c = $prefix.$name;
+				if($tableWrapper)
+					$c .= '_View_'.$tableWrapper;
+				else
+					$c .= '_Table';
+				if(class_exists($c))
+					return $c;
+			}
+		}
+		return $this->tableWrapperClassDefault;
+	}
+	function findEntityClass($name=null){
+		if($name){
+			$name = CaseConvert::ucw($name);
+			foreach($this->modelClassPrefix as $prefix){
+				$c = $prefix.$name.$this->modelClassSuffix;
+				if(class_exists($c))
+					return $c;
+			}
+		}
+		return class_exists($this->entityClassDefault)?$this->entityClassDefault:'stdClass';
+	}
+	function findEntityTable($obj,$default=null){
+		$table = $default;
+		if(isset($obj->_type)){
+			$table = $obj->_type;
+		}
+		else{
+			$c = get_class($obj);
+			if($c!=$this->entityClassDefault){
+				if($this->modelClassSuffix==''||substr($c,-1*strlen($this->modelClassSuffix))==$this->modelClassSuffix){
+					foreach($this->modelClassPrefix as $prefix){
+						if($prefix===false) continue;
+						if($prefix==''||substr($c,0,strlen($prefix))===$prefix){
+							$table = substr($c,strlen($prefix),-4);
+							break;
+						}
+					}
+				}
+				$table = CaseConvert::lcw($table);
+			}
+		}
+		return $table;
+	}
+	function arrayToEntity(array $array,$default=null){
+		if(isset($array['_type']))
+			$type = $array['_type'];
+		elseif($default)
+			$type = $default;
+		else
+			$type = $this->entityClassDefault;
+		$obj = $this->entityFactory($type,$array);
+		return $obj;
+	}
+	function offsetGet($k){
+		if(!isset($this->tableMap[$k]))
+			$this->tableMap[$k] = $this->loadTable($k,$this->primaryKey,$this->uniqTextKey);
+		return $this->tableMap[$k];
+	}
+	function offsetSet($k,$v){
+		if(!is_object($v))
+			$v = $this->loadTable($v,$this->primaryKey,$this->uniqTextKey);
+		$this->tableMap[$k] = $v;
+	}
+	function offsetExists($k){
+		return isset($this->tableMap[$k]);
+	}
+	function offsetUnset($k){
+		if(isset($this->tableMap[$k]))
+			unset($this->tableMap[$k]);
+	}
+	function loadTable($k,$primaryKey,$uniqTextKey){
+		if(isset($this->primaryKeys[$k]))
+			$primaryKey = $this->primaryKeys[$k];
+		if(isset($this->uniqTextKeys[$k]))
+			$uniqTextKey = $this->uniqTextKeys[$k];
+		$c = 'FoxORM\DataTable\\'.ucfirst($this->type);
+		return new $c($k,$primaryKey,$uniqTextKey,$this);
+	}
+	function construct(array $config=[]){}
+	function readRow($type,$id,$primaryKey='id',$uniqTextKey='uniq'){
+		if(!$this->tableExists($type))
+			return;
+		$obj = $this->entityFactory($type);
+		
+		if($obj instanceof StateFollower) $obj->__readingState(true);
+		
+		$this->trigger($type,'beforeRead',$obj);
+		$obj = $this->readQuery($type,$id,$primaryKey,$uniqTextKey,$obj);
+		if($obj){
+			$obj->_type = $type;
+			$this->trigger($type,'afterRead',$obj);
+			$this->trigger($type,'unserializeColumns',$obj);
+			
+			if($obj instanceof StateFollower) $obj->__readingState(false);
+			if($obj instanceof StateFollower||isset($obj->_modified)) $obj->_modified = false;
+		}
+		return $obj;
+	}
+	function deleteRow($type,$id,$primaryKey='id',$uniqTextKey='uniq'){
+		if(!$this->tableExists($type))
+			return;
+		if(is_object($id)){
+			$obj = $id;
+			if(isset($obj->$primaryKey))
+				$id = $obj->$primaryKey;
+			elseif(isset($obj->$uniqTextKey))
+				$id = $obj->$uniqTextKey;
+		}
+		else{
+			$obj = $this->entityFactory($type);
+			if($id){
+				if(self::canBeTreatedAsInt($id))
+					$obj->$primaryKey = $id;
+				else
+					$obj->$uniqTextKey = $id;
+			}
+		}
+		$this->trigger($type,'beforeDelete',$obj);
+		$r = $this->deleteQuery($type,$id,$primaryKey,$uniqTextKey);
+		if($r)
+			$this->trigger($type,'afterDelete',$obj);
+		return $r;
+	}
+	
+	function putRow($type,$obj,$id=null,$primaryKey='id',$uniqTextKey='uniq'){
+		$obj->_type = $type;
+		$properties = [];
+		$oneNew = [];
+		$oneUp = [];
+		$manyNew = [];
+		$one2manyNew = [];
+		$many2manyNew = [];
+		$cast = [];
+		$func = [];
+		$fk = [];
+		$refsOne = [];
+		
+		if(isset($id)){
+			if($obj instanceof StateFollower) $obj->__readingState(true);
+			if($uniqTextKey&&!self::canBeTreatedAsInt($id))
+				$obj->$uniqTextKey = $id;
+			else
+				$obj->$primaryKey = $id;
+			if($obj instanceof StateFollower) $obj->__readingState(false);
+		}
+		
+		if(isset($obj->$primaryKey)){
+			$id = $obj->$primaryKey;
+		}
+		elseif($uniqTextKey&&isset($obj->$uniqTextKey)){
+			$id = $this->readId($type,$obj->$uniqTextKey,$primaryKey,$uniqTextKey);
+			
+			if($obj instanceof StateFollower) $obj->__readingState(true);
+			$obj->$primaryKey = $id;
+			if($obj instanceof StateFollower) $obj->__readingState(false);
+		}
+		
+		$forcePK = isset($obj->_forcePK)?$obj->_forcePK:null;
+		if($forcePK===true)
+			$forcePK = $id;
+		
+		$update = isset($id)&&!$forcePK;
+		
+		$this->trigger($type,'beforeRecursive',$obj,'recursive',true);
+		
+		if(!isset($obj->_modified)||$obj->_modified!==false||!isset($id)){
+			$this->trigger($type,'beforePut',$obj);
+			$this->trigger($type,'serializeColumns',$obj);
+			if($update){
+				$this->trigger($type,'beforeUpdate',$obj);
+			}
+			else{
+				$this->trigger($type,'beforeCreate',$obj);
+			}
+		}
+		
+		foreach($obj as $key=>$v){
+			$k = $key;
+			$xclusive = substr($k,-3)=='_x_';
+			if($xclusive)
+				$k = substr($k,0,-3);
+			$relation = false;
+			if(substr($k,0,1)=='_'){
+				if(substr($k,1,4)=='one_'){
+					$k = substr($k,5);
+					$relation = 'one';
+				}
+				elseif(substr($k,1,5)=='many_'){
+					$k = substr($k,6);
+					$relation = 'many';
+				}
+				elseif(substr($k,1,10)=='many2many_'){
+					$k = substr($k,11);
+					$relation = 'many2many';
+				}
+				else{
+					if(substr($k,1,5)=='cast_'){
+						$cast[substr($k,6)] = $v;
+					}
+					if(substr($k,1,5)=='func_'){
+						$func[substr($k,6)] = $v;
+					}
+					continue;
+				}
+			}
+			elseif(is_object($v)){
+				$relation = 'one';
+			}
+			elseif(is_array($v)){
+				$relation = 'many';
+			}
+			if($relation){
+				switch($relation){
+					case 'one':
+						if(is_scalar($v))
+							$v = $this->scalarToArray($v,$k);
+						if(is_array($v))
+							$v = $this->arrayToEntity($v,$k);
+						$t = $this->findEntityTable($v,$k);
+						$pk = $this[$t]->getPrimaryKey();
+						if(!is_null($v)){
+							if(isset($v->$pk)){
+								$oneUp[$t][$v->$pk] = $v;
+							}
+							else{
+								$oneNew[$t][] = $v;
+							}
+						}
+						$rc = $k.'_'.$pk;
+						//$obj->$rc = &$v->$pk;
+						//$properties[$rc] = &$obj->$rc;
+						$refsOne[$rc] = &$v->$pk;
+						
+						$addFK = [$type,$t,$rc,$pk,$xclusive];
+						if(!in_array($addFK,$fk))
+							$fk[] = $addFK;
+						$obj->$key = $v;
+					break;
+					case 'many':
+						foreach($v as $mk=>$val){
+							if(is_scalar($val))
+								$v[$mk] = $val = $this->scalarToArray($val,$k);
+							if(is_array($val))
+								$v[$mk] = $val = $this->arrayToEntity($val,$k);
+							$t = $this->findEntityTable($val,$k);
+							$rc = $type.'_'.$primaryKey;
+							$one2manyNew[$t][] = [$val,$rc];
+							$addFK = [$t,$type,$rc,$primaryKey,$xclusive];
+							if(!in_array($addFK,$fk))
+								$fk[] = $addFK;
+						}
+						$obj->$key = $v;
+					break;
+					case 'many2many':
+						if(false!==$i=strpos($k,':')){ //via
+							$inter = substr($k,$i+1);
+							$k = substr($k,0,$i);
+						}
+						else{
+							$inter = $this->many2manyTableName($type,$k);
+						}
+						$typeColSuffix = $type==$k?'2':'';
+						$rc = $type.'_'.$primaryKey;
+						$obj->{'_linkMany_'.$inter} = [];
+						foreach($v as $kM2m=>$val){
+							if(is_scalar($val))
+								$v[$kM2m] = $val = $this->scalarToArray($val,$k);
+							if(is_array($val))
+								$v[$kM2m] = $val = $this->arrayToEntity($val,$k);
+							$t = $this->findEntityTable($val,$k);
+							$pk = $this[$t]->getPrimaryKey();
+							$rc2 = $k.$typeColSuffix.'_'.$pk;
+							$interm = $this->entityFactory($inter);
+							//$interm->$rc = &$obj->$primaryKey;
+							//$interm->$rc2 = &$val->$pk;
+							$manyNew[$t][] = $val;
+							$many2manyNew[$t][$k][$inter][] = [$interm,$rc,$rc2,&$val->$pk];
+							$addFK = [$inter,$t,$rc2,$pk,$xclusive];
+							if(!in_array($addFK,$fk))
+								$fk[] = $addFK;
+							$val->{'_linkOne_'.$inter} = $interm;
+							$obj->{'_linkMany_'.$inter}[] = $interm;
+						}
+						$addFK = [$inter,$type,$rc,$primaryKey,$xclusive];
+						if(!in_array($addFK,$fk))
+							$fk[] = $addFK;
+						$obj->$key = $v;
+					break;
+				}
+			}
+			else{
+				$properties[$k] = $v;
+			}
+		}
+
+		foreach($oneNew as $t=>$ones){
+			foreach($ones as $one){
+				$this[$t][] = $one;
+			}
+		}
+		foreach($oneUp as $t=>$ones){
+			foreach($ones as $i=>$one){
+				$this[$t][$i] = $one;
+			}
+		}
+		foreach($refsOne as $rc=>$rf){
+			$obj->$rc = $properties[$rc] = $rf;
+		}
+		
+		if(!$update||!isset($obj->_modified)||$obj->_modified!==false){
+			$modified = true;
+			if($update){
+				$r = $this->updateQuery($type,$properties,$id,$primaryKey,$uniqTextKey,$cast,$func);
+				$obj->$primaryKey = $r;
+				if($obj instanceof StateFollower||isset($obj->_modified))
+					$obj->_modified = false;
+				$this->trigger($type,'afterUpdate',$obj);
+			}
+			else{
+				if(array_key_exists($primaryKey,$properties))
+					unset($properties[$primaryKey]);
+				$r = $this->createQuery($type,$properties,$primaryKey,$uniqTextKey,$cast,$func,$forcePK);
+				$obj->$primaryKey = $r;
+				if($obj instanceof StateFollower||isset($obj->_modified))
+					$obj->_modified = false;
+				$this->trigger($type,'afterCreate',$obj);
+			}
+		}
+		else{
+			$modified = false;
+			$r = null;
+		}
+		
+		foreach($one2manyNew as $k=>$v){
+			if($update){
+				$except = [];
+				foreach($v as list($val,$rc)){
+					$val->$rc =  $obj->$primaryKey;
+					$t = $this->findEntityTable($val,$k);
+					$pk = $this[$t]->getPrimaryKey();
+					if(isset($val->$pk))
+						$except[] = $val->$pk;
+						
+				}
+				$this->one2manyDeleteAll($obj,$k,$except);
+			}
+			foreach($v as list($val,$rc)){
+				$val->$rc =  $obj->$primaryKey;
+				$this[$k][] = $val;
+			}
+		}
+		foreach($manyNew as $k=>$v){
+			foreach($v as $val){
+				$this[$k][] = $val;
+			}
+		}
+		foreach($many2manyNew as $t=>$v){
+			foreach($v as $k=>$viaLoop){
+				foreach($viaLoop as $via=>$val){
+					if($update){
+						$except = [];
+						$viaFk = $k.'_'.$this[$t]->getPrimaryKey();
+						foreach($this->many2manyLink($obj,$t,$via,$viaFk) as $id=>$old){
+							$pk = $this[$via]->getPrimaryKey();
+							unset($old->$pk);
+							if(false!==$i=array_search($old,$val)){
+								$val[$i]->$pk = $id;
+								$except[] = $id;
+							}
+						}
+						$this->many2manyDeleteAll($obj,$t,$via,$except,$viaFk);
+					}
+					foreach($val as list($interm,$rc,$rc2,$vpk)){
+						$interm->$rc = $obj->$primaryKey;
+						$interm->$rc2 = $vpk;
+						$this[$via][] = $interm;
+					}
+				}
+			}
+		}
+		if(method_exists($this,'addFK')){
+			foreach($fk as list($typ,$targetType,$property,$targetProperty,$isDep)){
+				$this->addFK($typ,$targetType,$property,$targetProperty,$isDep);
+			}
+		}
+		
+		if($modified){
+			$this->trigger($type,'afterPut',$obj);
+			$this->trigger($type,'unserializeColumns',$obj);
+		}
+		
+		$this->trigger($type,'afterRecursive',$obj,'recursive',false);
+		return $r?$r:$obj->$primaryKey;
+	}
+	
+	function setTableWapperFactory($factory){
+		$this->tableWrapperFactory = $factory;
+	}
+	function tableWrapperFactory($name, DataTable $dataTable=null, $tableWrapper=null){
+		if($this->tableWrapperFactory)
+			return call_user_func($this->tableWrapperFactory,$name,$this,$dataTable,$tableWrapper);
+		$c = $this->findTableWrapperClass($name,$tableWrapper);
+		if($c)
+			return new $c($name,$this,$dataTable);
+	}
+	
+	function dataFilter($data,array $filter){
+		if(!is_array($data)){
+			$tmp = $data;
+			$data = [];
+			foreach($tmp as $k=>$v){
+				$data[$k] = $v;
+			}
+		}
+		return array_intersect_key($data, array_fill_keys($filter, null));
+	}
+	
+	function entity($name,$data=null,$filter=null){
+		if($data&&is_array($filter)){
+			$data = $this->dataFilter($data,$filter);
+		}
+		if($this->entityFactory){
+			$row = call_user_func($this->entityFactory,$name,$this);
+		}
+		else{
+			$c = $this->findEntityClass($name);
+			$row = new $c;
+		}
+		$row->_type = $name;
+		if($row instanceof Box)
+			$row->setDatabase($this);
+		$row->_modified = true;
+		if($data){
+			foreach($data as $k=>$v){
+				$row->$k = $v;
+			}
+		}
+		return $row;
+	}
+	function entityFactory($name,$data=null){
+		if($this->entityFactory){
+			$row = call_user_func($this->entityFactory,$name,$this);
+		}
+		else{
+			$c = $this->findEntityClass($name);
+			$row = new $c;
+		}
+		$row->_type = $name;
+		if($row instanceof Box)
+			$row->setDatabase($this);
+		if($data){
+			if($row instanceof StateFollower)
+				$row->__readingState(true);
+			foreach($data as $k=>$v){
+				$row->$k = $v;
+			}
+			if($row instanceof StateFollower)
+				$row->__readingState(false);
+		}
+		return $row;
+	}
+	function setEntityFactory($factory){
+		$this->entityFactory = $factory;
+	}
+	
+	function trigger($type, $event, $row, $recursive=false, $flow=null){
+		return $this[$type]->trigger($event, $row, $recursive, $flow);
+	}
+	function triggerExec($events, $type, $event, $row, $recursive=false, $flow=null){
+		if($recursive){
+			if(isset($flow)){
+				if($flow){
+					if(isset($this->recursiveStorageOpen[$recursive])&&in_array($row,$this->recursiveStorageOpen[$recursive],true))
+						return;
+					$this->recursiveStorageOpen[$recursive][] = $row;
+				}
+				else{
+					if(isset($this->recursiveStorageOpen[$recursive])&&false!==$i=array_search($row,$this->recursiveStorageOpen[$recursive],true)){
+						unset($this->recursiveStorageOpen[$recursive][$i]);
+						$this->recursiveStorageClose[$recursive][$i] = $row;
+						if(!empty($this->recursiveStorageOpen[$recursive]))
+							return;
+					}
+					ksort($this->recursiveStorageClose[$recursive]);
+					$this->recursiveStorageClose[$recursive] = array_reverse($this->recursiveStorageClose[$recursive]);
+					foreach($this->recursiveStorageClose[$recursive] as $v){
+						$this->trigger($v->_type, $event, $v);
+					}
+					unset($this->recursiveStorageOpen[$recursive]);
+					unset($this->recursiveStorageClose[$recursive]);
+					return;
+				}
+			}
+		}
+
+		if($row instanceof Observer){
+			foreach($events as $calls){
+				foreach($calls as $call){
+					if(is_string($call))
+						call_user_func([$row,$call], $this);
+					else
+						call_user_func($call, $row, $this);
+				}
+			}
+		}
+		
+		if($recursive){
+			foreach($row as $k=>$v){
+				if(substr($k,0,1)=='_'&&!in_array(current(explode('_',$k)),['one','many','many2many']))
+					continue;
+				if(is_array($v)){
+					foreach($v as $val){
+						if(is_object($val)){
+							$this->trigger($val->_type, $event, $val, $recursive, $flow);
+						}
+					}
+				}
+				elseif(is_object($v)){
+					$this->trigger($v->_type, $event, $v, $recursive, $flow);
+				}
+			}				
+		}
+	}
+	
+	function triggerTableWrapper($method,$type,$args){
+		$this[$type]->triggerTableWrapper($method,$args);			
+	}
+	
+	function create($mixed){
+		if(func_num_args()<2){
+			$obj = is_array($mixed)?$this->arrayToEntity($mixed):$mixed;
+			$type = $this->findEntityTable($obj);
+		}
+		else{
+			list($type,$obj) = func_get_args();
+		}
+		return $this[$type]->offsetSet(null,$obj);
+	}
+	function read($mixed){
+		if(func_num_args()<2){
+			$obj = is_array($mixed)?$this->arrayToEntity($mixed):$mixed;
+			$type = $this->findEntityTable($obj);
+			$pk = $this[$type]->getPrimaryKey();
+			$id = $obj->$pk;
+		}
+		else{
+			list($type,$id) = func_get_args();
+		}
+		return $this[$type]->offsetGet($id);
+	}
+	function update($mixed){
+		if(func_num_args()<2){
+			$obj = is_array($mixed)?$this->arrayToEntity($mixed):$mixed;
+			$type = $this->findEntityTable($obj);
+			$pk = $this[$type]->getPrimaryKey();
+			$id = $obj->$pk;
+		}
+		elseif(func_num_args()<3){
+			list($type,$obj) = func_get_args();
+			if(is_array($obj))
+				$obj = $this->arrayToEntity($obj);
+			$pk = $this[$type]->getPrimaryKey();
+			$id = $obj->$pk;
+		}
+		else{
+			list($type,$id,$obj) = func_get_args();
+		}
+		return $this[$type]->offsetSet($id,$obj);
+	}
+	function delete($mixed){
+		if(func_num_args()<2){
+			$obj = is_array($mixed)?$this->arrayToEntity($mixed):$mixed;
+			$type = $this->findEntityTable($obj);
+			$id = $obj;
+		}
+		else{
+			list($type,$id) = func_get_args();
+		}
+		return $this[$type]->offsetUnset($id);
+	}
+	function put($mixed){
+		if(func_num_args()<2){
+			$obj = is_array($mixed)?$this->arrayToEntity($mixed):$mixed;
+			$type = $this->findEntityTable($obj);
+		}
+		else{
+			list($type,$obj) = func_get_args();
+		}
+		return $this[$type]->offsetSet(null,$obj);
+	}
+	
+	static function canBeTreatedAsInt($value){
+		return (bool)(strval($value)===strval(intval($value)));
+	}
+	
+	static function snippet($text,$query,$tokens=15,$start='<b>',$end='</b>',$sep=' <b>...</b> '){
+		if(!trim($text))
+			return '';
+		$words = implode('|', explode(' ', preg_quote($query)));
+		$s = '\s\x00-/:-@\[-`{-~'; //character set for start/end of words
+		preg_match_all('#(?<=['.$s.']).{1,'.$tokens.'}(('.$words.').{1,'.$tokens.'})+(?=['.$s.'])#uis', $text, $matches, PREG_SET_ORDER);
+		$results = [];
+		foreach($matches as $line)
+			$results[] = $line[0];
+		$result = implode($sep, $results);
+		$result = preg_replace('#'.$words.'#iu', $start.'$0'.$end, $result);
+		return $result?$sep.$result.$sep:$text;
+	}
+	
+	static function snippet2($text,$query,$max=60,$start='<b>',$end='</b>',$sep=' <b>...</b> '){
+		if(!trim($text))
+			return '';
+		if($max&&strlen($text)>$max)
+			$text = substr($text,0,$max).$sep;
+		$x = explode(' ',$query);
+		foreach($x as $q){
+			$text = preg_replace('#'.preg_quote($q).'#iu',$start.'$0'.$end,$text);
+		}
+		return $text;
+	}
+	
+	function one2manyDelete($obj,$k,$remove=[]){
+		$remove = (array)$remove;
+		$t = $this->findEntityTable($obj);
+		$pk = $t.'_'.$this[$t]->getPrimaryKey();
+		foreach($this->one2many($obj,$k,$except) as $o){
+			if(in_array($o->$pk,$remove))
+				$this->delete($o);
+		}
+	}
+	function one2manyDeleteAll($obj,$k,$except=[]){
+		$pk = $this[$k]->getPrimaryKey();
+		foreach($this->one2many($obj,$k,$except) as $o){
+			if(!in_array($o->$pk,$except))
+				$this->delete($o);
+		}
+	}
+	function many2manyDelete($obj,$k,$via=null,$remove=[]){
+		$remove = (array)$remove;
+		$pk = $k.'_'.$this[$k]->getPrimaryKey();
+		foreach($this->many2manyLink($obj,$k,$via) as $o){
+			if(in_array($o->$pk,$remove))
+				$this->delete($o);
+		}
+	}
+	function many2manyDeleteAll($obj,$k,$via=null,$except=[]){
+		$t = $this->many2manyTableName($this->findEntityTable($obj),$k);
+		$pk = $this[$t]->getPrimaryKey();
+		foreach($this->many2manyLink($obj,$k,$via) as $o){
+			if(!in_array($o->$pk,$except))
+				$this->delete($o);
+		}
+	}
+	
+	function deleteMany($tableParent,$table,$id){
+		$pk = $this[$table]->getPrimaryKey();
+		foreach($this->one2many($this[$tableParent][$id],$table) as $o){
+			$this->delete($o);
+		}
+	}
+	
+	function loadMany2one($obj,$type){
+		return $this[$type]->loadOne($obj);
+	}
+	function loadOne2many($obj,$type){
+		return $this[$type]->loadMany($obj);
+	}
+	function loadMany2many($obj,$type,$via=null){
+		return $this[$type]->loadMany2many($obj,$via);
+	}
+	
+	//abstract function many2one($obj,$type){}
+	//abstract function one2many($obj,$type){}
+	//abstract function many2many($obj,$type){}
+	//abstract function many2manyLink($obj,$type){}
+	
+	function rewind(){
+		reset($this->tablesList);
+	}
+	function current(){
+		return $this[current($this->tablesList)];
+	}
+	function key(){
+		return current($this->tablesList);
+	}
+	function next(){
+		$next = next($this->tablesList);
+		if($next!==false)
+			return $this[$next];
+	}
+	function valid(){
+		return key($this->tablesList)!==null;
+	}
+	
+	function scalarToArray($v,$type){
+		$a = ['_type'=>$type];
+		if(self::canBeTreatedAsInt($v)){
+			$a[$this[$type]->getPrimaryKey()] = $v;
+		}
+		else{
+			$a[$this[$type]->getUniqTextKey()] = $v;
+		}
+		return $a;
+	}
+	
+	function jsonSerialize(){
+		$data = [];
+		foreach($this as $name=>$row){
+			$data[$name] = $row;
+		}
+		return $data;
+	}
+	
+	function many2manyTableName(){
+		$a = [];
+		foreach(func_get_args() as $arg){
+			if(is_array($arg)){
+				$a = array_merge($a,$arg);
+			}
+			else{
+				$a[] = $arg;
+			}
+		}
+		sort($a);
+		return $this->many2manyPrefix.implode('_',$a);
+	}
+	function debug($level=self::DEBUG_ON){
+		if($level===true) $level = self::DEBUG_ON;
+		elseif(is_string($level)) $level = $this->debugLevelStringToConstant($level);
+		$this->debugLevel = $level;
+	}
+	protected function debugLevelStringToConstant($level){
+		return constant(__CLASS__.'::DEBUG_'.strtoupper($level));
+	}
+	function debugLevel($level=null){
+		if(!is_null($level)){
+			if(is_string($level))
+				$level = $this->debugLevelStringToConstant($level);
+			return $this->debugLevel&$level;
+		}
+		else{
+			return $this->debugLevel;
+		}
+	}
+}
