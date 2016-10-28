@@ -198,6 +198,7 @@ class Mysql extends SQL{
 		} catch ( \PDOException $e ) {
 			// Failure of fk-constraints is not a problem
 		}
+		return true;
 	}
 	protected function _getKeyMapForType($type){
 		$table = $this->prefixTable( $type );

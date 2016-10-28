@@ -45,6 +45,7 @@ abstract class SQL extends DataSource{
 	
 	private $cacheTables;
 	private $cacheColumns = [];
+	private $cacheFk = [];
 	
 	function construct(array $config=[]){		
 		if(isset($config[0]))
@@ -1315,15 +1316,20 @@ abstract class SQL extends DataSource{
 		$tmp = $this->performingSystemQuery;
 		$this->performingSystemQuery = true;
 		$r = $this->_addFK($type,$targetType,$property,$targetProperty,$isDep);
+		if($r&&isset($this->cacheFk[$type])){
+			unset($this->cacheFk[$type]);
+		}
 		$this->performingSystemQuery = $tmp;
 		return $r;
 	}
-	function getKeyMapForType($type){
+	function getKeyMapForType($type, $reload=false){
 		$tmp = $this->performingSystemQuery;
 		$this->performingSystemQuery = true;
-		$r = $this->_getKeyMapForType($type);
+		if(!isset($this->cacheFk[$type]) || $reload){
+			$this->cacheFk[$type] = $this->_getKeyMapForType($type);
+		}
 		$this->performingSystemQuery = $tmp;
-		return $r;
+		return $this->cacheFk[$type];
 	}
 	function getUniqueConstraints($type,$prefix=true){
 		$tmp = $this->performingSystemQuery;

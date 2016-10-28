@@ -204,6 +204,7 @@ class Pgsql extends SQL{
 		} catch ( \PDOException $e ) {
 			return false;
 		}
+		return true;
 	}
 	function columnCode( $typedescription, $includeSpecials = FALSE ){
 		$typedescription = strtolower($typedescription);

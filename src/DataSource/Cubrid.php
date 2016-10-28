@@ -136,9 +136,9 @@ class Cubrid extends SQL{
 		try {
 			$this->execute($sql);
 		} catch( \PDOException $e ) {
-			return FALSE;
+			return false;
 		}
-		return TRUE;
+		return true;
 	}
 	protected function _getKeyMapForType( $type  ){
 		$table = $this->prefixTable($type);
