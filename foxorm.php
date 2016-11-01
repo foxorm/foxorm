@@ -4371,7 +4371,8 @@ class Select extends Where {
 		return $this;
 	}
 	function limit($limit){
-		$this->limit = (int)$limit;
+		$limit = (int)$limit;
+		$this->limit = $limit>0?$limit:null;
 		if(func_num_args()>1)
 			$this->offset(func_get_arg(1));
 		return $this;
