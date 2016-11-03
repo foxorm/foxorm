@@ -137,6 +137,10 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 			$type = $default;
 		else
 			$type = $this->entityClassDefault;
+		
+		if(!isset($array['_modified']))
+			$array['_modified'] = true;
+		
 		$obj = $this->entityFactory($type,$array);
 		return $obj;
 	}
@@ -381,7 +385,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 				$properties[$k] = $v;
 			}
 		}
-
+		
 		foreach($oneNew as $t=>$ones){
 			foreach($ones as $one){
 				$this[$t][] = $one;
@@ -472,7 +476,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 				$this->addFK($typ,$targetType,$property,$targetProperty,$isDep);
 			}
 		}
-		
+
 		if($modified){
 			$this->trigger($type,'afterPut',$obj);
 			$this->trigger($type,'unserializeColumns',$obj);
