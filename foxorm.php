@@ -999,6 +999,14 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 			return $this->debugLevel;
 		}
 	}
+	abstract function getAll($q, $bind = []);
+	abstract function getRow($q, $bind = []);
+	abstract function getCol($q, $bind = []);
+	abstract function getCell($q, $bind = []);
+	
+	function getAllIterator($q, $bind){
+		return new ArrayIterator($this->getAll($q, $bind));
+	}
 }
 }
 #DataSource/SQL.php
@@ -3804,6 +3812,19 @@ class Filesystem extends DataSource{
 	function debug($level=self::DEBUG_ON){
 		parent::debug($level);
 	}
+	
+	function getAll($q, $bind = []){
+		
+	}
+	function getRow($q, $bind = []){
+		
+	}
+	function getCol($q, $bind = []){
+		
+	}
+	function getCell($q, $bind = []){
+		
+	}
 }
 }
 #DataSource/Cubrid.php
@@ -5294,6 +5315,7 @@ class Replace extends Base {
 
 namespace FoxORM {
 use FoxORM\Helper\Pagination;
+use FoxORM\ArrayIterator;
 abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSerializable{
 	private static $defaultEvents = [
 		'beforeRecursive',
@@ -5465,10 +5487,10 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 		return $obj->{'_one_'.$this->name} = $this->one($obj)->getRow();
 	}
 	function loadMany($obj){
-		return $obj->{'_many_'.$this->name} = $this->many($obj)->getAll();
+		return $obj->{'_many_'.$this->name} = $this->many($obj)->getAllIterator();
 	}
 	function loadMany2many($obj,$via=null){
-		return $obj->{'_many2many_'.$this->name} = $this->many2many($obj,$via)->getAll();
+		return $obj->{'_many2many_'.$this->name} = $this->many2many($obj,$via)->getAllIterator();
 	}
 	function one($obj){
 		return $this->dataSource->many2one($obj,$this->name);
@@ -5487,6 +5509,10 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 	abstract function getRow();
 	abstract function getCol();
 	abstract function getCell();
+	
+	function getAllIterator(){
+		return new ArrayIterator($this->getAll());
+	}
 	
 	function on($event,$call=null,$index=0,$prepend=false){
 		if($index===true){
@@ -5567,11 +5593,7 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 	}
 	
 	function jsonSerialize(){
-		$data = [];
-		foreach($this as $id=>$row){
-			$data[$id] = $row;
-		}
-		return $data;
+		return $this->getAllIterator();
 	}
 	
 	function entity($data=null,$filter=null){
