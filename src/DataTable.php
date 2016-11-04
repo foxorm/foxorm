@@ -1,6 +1,7 @@
 <?php
 namespace FoxORM;
 use FoxORM\Helper\Pagination;
+use FoxORM\ArrayIterator;
 abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSerializable{
 	private static $defaultEvents = [
 		'beforeRecursive',
@@ -172,10 +173,10 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 		return $obj->{'_one_'.$this->name} = $this->one($obj)->getRow();
 	}
 	function loadMany($obj){
-		return $obj->{'_many_'.$this->name} = $this->many($obj)->getAll();
+		return $obj->{'_many_'.$this->name} = $this->many($obj)->getAllIterator();
 	}
 	function loadMany2many($obj,$via=null){
-		return $obj->{'_many2many_'.$this->name} = $this->many2many($obj,$via)->getAll();
+		return $obj->{'_many2many_'.$this->name} = $this->many2many($obj,$via)->getAllIterator();
 	}
 	function one($obj){
 		return $this->dataSource->many2one($obj,$this->name);
@@ -194,6 +195,10 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 	abstract function getRow();
 	abstract function getCol();
 	abstract function getCell();
+	
+	function getAllIterator(){
+		return new ArrayIterator($this->getAll());
+	}
 	
 	function on($event,$call=null,$index=0,$prepend=false){
 		if($index===true){
@@ -274,11 +279,7 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 	}
 	
 	function jsonSerialize(){
-		$data = [];
-		foreach($this as $id=>$row){
-			$data[$id] = $row;
-		}
-		return $data;
+		return $this->getAllIterator();
 	}
 	
 	function entity($data=null,$filter=null){

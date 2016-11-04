@@ -839,4 +839,8 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 	abstract function getRow($q, $bind = []);
 	abstract function getCol($q, $bind = []);
 	abstract function getCell($q, $bind = []);
+	
+	function getAllIterator($q, $bind){
+		return new ArrayIterator($this->getAll($q, $bind));
+	}
 }
