@@ -28,4 +28,17 @@ class Filesystem extends DataSource{
 	function debug($level=self::DEBUG_ON){
 		parent::debug($level);
 	}
+	
+	function getAll($q, $bind = []){
+		
+	}
+	function getRow($q, $bind = []){
+		
+	}
+	function getCol($q, $bind = []){
+		
+	}
+	function getCell($q, $bind = []){
+		
+	}
 }

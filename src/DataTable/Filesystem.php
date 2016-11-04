@@ -81,16 +81,16 @@ class Filesystem extends DataTable{
 		$this->directoryIterator = clone $this->directoryIterator;
 	}
 	
-	function getAll($q, $bind = []){
+	function getAll(){
 		
 	}
-	function getRow($q, $bind = []){
+	function getRow(){
 		
 	}
-	function getCol($q, $bind = []){
+	function getCol(){
 		
 	}
-	function getCell($q, $bind = []){
+	function getCell(){
 		
 	}
 }
