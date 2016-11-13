@@ -28,7 +28,7 @@ class Bases implements \ArrayAccess{
 	function debug($level=DataSource::DEBUG_ON){
 		$this->debug = $level;
 		foreach($this->mapObjects as $o)
-			$o->debug($d);
+			$o->debug($level);
 	}
 	function setEntityFactory($factory){
 		$this->entityFactory = $factory;
