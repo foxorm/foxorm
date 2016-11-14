@@ -90,13 +90,13 @@ if(is_dir($src)){
 
 $code = "<?php\n#FoxORM\n#http://foxorm.com\n\n".str_replace('<?php', '', $code);
 
-$b = file_put_contents('foxorm.php',$code);
+$b = file_put_contents('dist/foxorm.php',$code);
 
 if($b>0){
 	echo "Written: $b bytes\n";
-	include 'foxorm.php';
+	include 'dist/foxorm.php';
 	echo "Done !\n";
 }
 else{
-	echo "Unable to write file ".getcwd()."/foxorm.php\n";
+	echo "Unable to write file ".getcwd()."/dist/foxorm.php\n";
 }
