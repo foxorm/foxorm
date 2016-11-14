@@ -282,8 +282,8 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 		return $this->getAllIterator();
 	}
 	
-	function entity($data=null,$filter=null){
-		return $this->dataSource->entity($this->name,$data,$filter);
+	function entity($data=null,$filter=null,$reversedFilter=false){
+		return $this->dataSource->entity($this->name,$data,$filter,$reversedFilter);
 	}
 	function entityFactory($data){
 		return $this->dataSource->entityFactory($this->name,$data);
