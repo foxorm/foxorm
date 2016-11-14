@@ -661,7 +661,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 			return new $c($name,$this,$dataTable);
 	}
 	
-	function dataFilter($data,array $filter){
+	function dataFilter($data,array $filter, $reversedFilter=false){
 		if(!is_array($data)){
 			$tmp = $data;
 			$data = [];
@@ -669,12 +669,20 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 				$data[$k] = $v;
 			}
 		}
-		return array_intersect_key($data, array_fill_keys($filter, null));
+		if($reversedFilter){
+			$data = array_filter($data, function($k)use($filter){
+				return !isset($filter[$k]);
+			});
+		}
+		else{
+			$data = array_intersect_key($data, array_fill_keys($filter, null));
+		}
+		return $data;
 	}
 	
-	function entity($name,$data=null,$filter=null){
+	function entity($name,$data=null,$filter=null,$reversedFilter=false){
 		if($data&&is_array($filter)){
-			$data = $this->dataFilter($data,$filter);
+			$data = $this->dataFilter($data,$filter,$reversedFilter);
 		}
 		if($this->entityFactory){
 			$row = call_user_func($this->entityFactory,$name,$this);
@@ -7320,9 +7328,9 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 		$this->__readingState(false);
 	}
 	
-	function import($data, $filter=null){
+	function import($data, $filter=null, $reversedFilter=false){
 		if($filter){
-			$data = $this->db->dataFilter($data,$filter);
+			$data = $this->db->dataFilter($data,$filter,$reversedFilter);
 		}
 		foreach($data as $k=>$v){
 			$this->__set($k,$v);

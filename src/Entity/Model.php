@@ -258,9 +258,9 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 		$this->__readingState(false);
 	}
 	
-	function import($data, $filter=null){
+	function import($data, $filter=null, $reversedFilter=false){
 		if($filter){
-			$data = $this->db->dataFilter($data,$filter);
+			$data = $this->db->dataFilter($data,$filter,$reversedFilter);
 		}
 		foreach($data as $k=>$v){
 			$this->__set($k,$v);
