@@ -691,7 +691,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 			}
 		}
 		elseif(is_object($data)){
-			$nameSource = $this->findEntityTable($obj);
+			$nameSource = $this->findEntityTable($data);
 		}
 		else{
 			$nameSource = null;
