@@ -268,6 +268,36 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 		}
 		return $data;
 	}
+	function newImport($data, $filter=null, $reversedFilter=false){
+		$preFilter = [];
+		$table = $this->db[$name];
+		$preFilter[] = $table->getPrimaryKey();
+		$preFilter[] = $table->getUniqTextKey();
+		if(is_array($data)){
+			if(isset($data['_type'])&&$data['_type']){
+				$nameSource = $data['_type'];
+			}
+		}
+		elseif(is_object($data)){
+			$nameSource = $this->db->findEntityTable($obj);
+		}
+		else{
+			$nameSource = null;
+		}
+		if($nameSource){
+			$tableSource = $this->db[$nameSource];
+			$pk = $tableSource->getPrimaryKey();
+			$pku = $tableSource->getUniqTextKey();
+			if(!in_array($pk,$preFilter)){
+				$preFilter[] = $pk;
+			}
+			if(!in_array($pku,$preFilter)){
+				$preFilter[] = $pku;
+			}
+		}
+		$data = $this->dataFilter($data,$preFilter,true);
+		return $this->import($data, $filter, $reversedFilter);
+	}
 	
 	function delete(){
 		$this->_table->delete($this);
