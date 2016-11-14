@@ -54,6 +54,10 @@ $files = [
 	'F.php',
 ];
 
+$vendorFiles = [
+	'jdorn/sql-formatter/lib/SqlFormatter.php',
+];
+
 $code = '';
 foreach($files as $f){
 	$file = $src.$f;
@@ -64,6 +68,25 @@ foreach($files as $f){
 	$code .= $raw;
 	echo "Added $f to package\n";
 }
+
+$src = __DIR__.'/vendor/';
+if(is_dir($src)){
+	foreach($vendorFiles as $f){
+		$file = $src.$f;
+		$raw = file_get_contents($file);
+		if(strpos($raw,'namespace')===false){
+			$raw = "namespace {\n$raw";
+		}
+		else{
+			$raw = preg_replace('/namespace\s+([a-zA-Z0-9\\\;]+);/m', 'namespace $1 {', $raw);
+		}
+		$raw .= "\n}\n";
+		$code .= "#vendor/$f\n";
+		$code .= $raw;
+		echo "Added vendor/$f to package\n";
+	}
+}
+
 
 $code = "<?php\n#FoxORM\n#http://foxorm.com\n\n".str_replace('<?php', '', $code);
 
