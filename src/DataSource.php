@@ -515,6 +515,37 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		}
 		return $data;
 	}
+	
+	function newEntity($name,$data=null,$filter=null,$reversedFilter=false){
+		$preFilter = [];
+		$table = $this[$name];
+		$preFilter[] = $table->getPrimaryKey();
+		$preFilter[] = $table->getUniqTextKey();
+		if(is_array($data)){
+			if(isset($data['_type'])&&$data['_type']){
+				$nameSource = $data['_type'];
+			}
+		}
+		elseif(is_object($data)){
+			$nameSource = $this->findEntityTable($obj);
+		}
+		else{
+			$nameSource = null;
+		}
+		if($nameSource){
+			$tableSource = $this[$nameSource];
+			$pk = $tableSource->getPrimaryKey();
+			$pku = $tableSource->getUniqTextKey();
+			if(!in_array($pk,$preFilter)){
+				$preFilter[] = $pk;
+			}
+			if(!in_array($pku,$preFilter)){
+				$preFilter[] = $pku;
+			}
+		}
+		$data = $this->dataFilter($data,$preFilter,true);
+		return $this->entity($name,$data,$filter,$reversedFilter);
+	}
 	function entity($name,$data=null,$filter=null,$reversedFilter=false){
 		if($data&&is_array($filter)){
 			$data = $this->dataFilter($data,$filter,$reversedFilter);
