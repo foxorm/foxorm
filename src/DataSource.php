@@ -507,15 +507,14 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		}
 		if($reversedFilter){
 			$data = array_filter($data, function($k)use($filter){
-				return !isset($filter[$k]);
-			});
+				return !in_array($k,$filter);
+			},ARRAY_FILTER_USE_KEY);
 		}
 		else{
 			$data = array_intersect_key($data, array_fill_keys($filter, null));
 		}
 		return $data;
 	}
-	
 	function entity($name,$data=null,$filter=null,$reversedFilter=false){
 		if($data&&is_array($filter)){
 			$data = $this->dataFilter($data,$filter,$reversedFilter);
