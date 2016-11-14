@@ -263,6 +263,7 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 			$data = $this->db->dataFilter($data,$filter,$reversedFilter);
 		}
 		foreach($data as $k=>$v){
+			if($k=='_type'&&$this->_type) continue;
 			$this->__set($k,$v);
 		}
 		return $data;
