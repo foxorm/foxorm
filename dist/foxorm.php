@@ -671,8 +671,8 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		}
 		if($reversedFilter){
 			$data = array_filter($data, function($k)use($filter){
-				return !isset($filter[$k]);
-			});
+				return !in_array($k,$filter);
+			},ARRAY_FILTER_USE_KEY);
 		}
 		else{
 			$data = array_intersect_key($data, array_fill_keys($filter, null));
@@ -680,6 +680,36 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		return $data;
 	}
 	
+	function newEntity($name,$data=null,$filter=null,$reversedFilter=false){
+		$preFilter = [];
+		$table = $this[$name];
+		$preFilter[] = $table->getPrimaryKey();
+		$preFilter[] = $table->getUniqTextKey();
+		if(is_array($data)){
+			if(isset($data['_type'])&&$data['_type']){
+				$nameSource = $data['_type'];
+			}
+		}
+		elseif(is_object($data)){
+			$nameSource = $this->findEntityTable($obj);
+		}
+		else{
+			$nameSource = null;
+		}
+		if($nameSource){
+			$tableSource = $this[$nameSource];
+			$pk = $tableSource->getPrimaryKey();
+			$pku = $tableSource->getUniqTextKey();
+			if(!in_array($pk,$preFilter)){
+				$preFilter[] = $pk;
+			}
+			if(!in_array($pku,$preFilter)){
+				$preFilter[] = $pku;
+			}
+		}
+		$data = $this->dataFilter($data,$preFilter,true);
+		return $this->entity($name,$data,$filter,$reversedFilter);
+	}
 	function entity($name,$data=null,$filter=null,$reversedFilter=false){
 		if($data&&is_array($filter)){
 			$data = $this->dataFilter($data,$filter,$reversedFilter);
@@ -5605,8 +5635,11 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 		return $this->getAllIterator();
 	}
 	
-	function entity($data=null,$filter=null){
-		return $this->dataSource->entity($this->name,$data,$filter);
+	function entity($data=null,$filter=null,$reversedFilter=false){
+		return $this->dataSource->entity($this->name,$data,$filter,$reversedFilter);
+	}
+	function newEntity($data=null,$filter=null,$reversedFilter=false){
+		return $this->dataSource->newEntity($this->name,$data,$filter,$reversedFilter);
 	}
 	function entityFactory($data){
 		return $this->dataSource->entityFactory($this->name,$data);
@@ -7338,6 +7371,36 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 			$this->__set($k,$v);
 		}
 		return $data;
+	}
+	function newImport($data, $filter=null, $reversedFilter=false){
+		$preFilter = [];
+		$table = $this->db[$name];
+		$preFilter[] = $table->getPrimaryKey();
+		$preFilter[] = $table->getUniqTextKey();
+		if(is_array($data)){
+			if(isset($data['_type'])&&$data['_type']){
+				$nameSource = $data['_type'];
+			}
+		}
+		elseif(is_object($data)){
+			$nameSource = $this->db->findEntityTable($obj);
+		}
+		else{
+			$nameSource = null;
+		}
+		if($nameSource){
+			$tableSource = $this->db[$nameSource];
+			$pk = $tableSource->getPrimaryKey();
+			$pku = $tableSource->getUniqTextKey();
+			if(!in_array($pk,$preFilter)){
+				$preFilter[] = $pk;
+			}
+			if(!in_array($pku,$preFilter)){
+				$preFilter[] = $pku;
+			}
+		}
+		$data = $this->dataFilter($data,$preFilter,true);
+		return $this->import($data, $filter, $reversedFilter);
 	}
 	
 	function delete(){
