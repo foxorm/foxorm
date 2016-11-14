@@ -533,6 +533,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		$row->_modified = true;
 		if($data){
 			foreach($data as $k=>$v){
+				if($k=='_type') continue;
 				$row->$k = $v;
 			}
 		}
