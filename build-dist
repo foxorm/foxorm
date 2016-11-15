@@ -48,7 +48,6 @@ $files = [
 	'Validation/Ruler.php',
 	'Validation/Exception.php',
 	'Validation/Filter.php',
-	'Validation/Gibberish.php',
 	
 	'MainDb.php',
 	'F.php',
