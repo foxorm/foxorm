@@ -333,8 +333,6 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 							}
 						}
 						$rc = $k.'_'.$pk;
-						//$obj->$rc = &$v->$pk;
-						//$properties[$rc] = &$obj->$rc;
 						$refsOne[$rc] = &$v->$pk;
 						
 						$addFK = [$type,$t,$rc,$pk,$xclusive];
@@ -383,8 +381,6 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 							$pk = $this[$t]->getPrimaryKey();
 							$rc2 = $k.$typeColSuffix.'_'.$pk;
 							$interm = $this->entityFactory($inter);
-							//$interm->$rc = &$obj->$primaryKey;
-							//$interm->$rc2 = &$val->$pk;
 							$manyNew[$t][] = $val;
 							$many2manyNew[$t][$k][$inter][] = [$interm,$rc,$rc2,&$val->$pk];
 							$addFK = [$inter,$t,$rc2,$pk,$xclusive];
