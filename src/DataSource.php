@@ -628,10 +628,13 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		if($row instanceof Observer){
 			foreach($events as $calls){
 				foreach($calls as $call){
-					if(is_string($call))
+					if(is_string($call)){
 						call_user_func([$row,$call], $this);
-					else
+						$row->trigger($call, $recursive, $flow);
+					}
+					else{
 						call_user_func($call, $row, $this);
+					}
 				}
 			}
 		}

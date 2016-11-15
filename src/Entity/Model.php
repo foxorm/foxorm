@@ -5,6 +5,7 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 	private $__readingState;
 	private $__data = [];
 	private $__cursor = [];
+	private $__events = [];
 	
 	protected $db;
 	protected $_table;
@@ -301,5 +302,46 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 	
 	function delete(){
 		$this->_table->delete($this);
+	}
+	
+	function on($event,$call=null,$index=0,$prepend=false){
+		if($index===true){
+			$prepend = true;
+			$index = 0;
+		}
+		if(is_null($call))
+			$call = $event;
+		if(!isset($this->__events[$event][$index]))
+			$this->__events[$event][$index] = [];
+		if($prepend)
+			array_unshift($this->__events[$event][$index],$call);
+		else
+			$this->__events[$event][$index][] = $call;
+		return $this;
+	}
+	function off($event,$call=null,$index=0){
+		if(func_num_args()===1){
+			if(isset($this->__events[$event]))
+				unset($this->__events[$event]);
+		}
+		elseif(func_num_args()===2){
+			foreach($this->__events[$event] as $index){
+				if(false!==$i=array_search($call,$this->__events[$event][$index],true)){
+					unset($this->__events[$event][$index][$i]);
+				}
+			}
+		}
+		elseif(isset($this->__events[$event][$index])){
+			if(!$call)
+				unset($this->__events[$event][$index]);
+			elseif(false!==$i=array_search($call,$this->__events[$event][$index],true))
+				unset($this->__events[$event][$index][$i]);
+		}
+		return $this;
+	}
+	function trigger($event, $recursive=false, $flow=null){
+		if(isset($this->__events[$event]))
+			$this->db->triggerExec($this->__events[$event], $this->_type, $event, $this, $recursive, $flow);
+		return $this;
 	}
 }

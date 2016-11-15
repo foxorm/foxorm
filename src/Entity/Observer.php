@@ -13,4 +13,8 @@ interface Observer{
 	function afterUpdate();
 	function afterDelete();
 	function afterRecursive();
+	
+	function on($event,$call=null,$index=0,$prepend=false);
+	function off($event,$call=null,$index=0);
+	function trigger($event, $recursive=false, $flow=null);
 }
