@@ -216,6 +216,16 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 	}
 	
 	function putRow($type,$obj,$id=null,$primaryKey='id',$uniqTextKey='uniq'){
+		
+		if($obj->_type&&$obj->_type!=$type){ //keep track and make easy for copy from one table to another
+			$pkFrom = $this[$obj->_type]->getPrimaryKey();
+			if(isset($obj->$pkFrom)){
+				$relFrom = '_one_'.$obj->_type;
+				$obj->$relFrom = $obj->$pkFrom;
+				unset($obj->$pkFrom);
+			}
+		}
+		
 		$obj->_type = $type;
 		$properties = [];
 		$oneNew = [];
@@ -309,7 +319,10 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 							$v = $this->scalarToArray($v,$k);
 						if(is_array($v))
 							$v = $this->arrayToEntity($v,$k);
-						$t = $this->findEntityTable($v,$k);
+						
+						//$t = $this->findEntityTable($v,$k);
+						$t = $k?$k:$this->findEntityTable($v);
+						
 						$pk = $this[$t]->getPrimaryKey();
 						if(!is_null($v)){
 							if(isset($v->$pk)){
@@ -335,7 +348,10 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 								$v[$mk] = $val = $this->scalarToArray($val,$k);
 							if(is_array($val))
 								$v[$mk] = $val = $this->arrayToEntity($val,$k);
-							$t = $this->findEntityTable($val,$k);
+							
+							//$t = $this->findEntityTable($val,$k);
+							$t = $k?$k:$this->findEntityTable($v);
+							
 							$rc = $type.'_'.$primaryKey;
 							$one2manyNew[$t][] = [$val,$rc];
 							$addFK = [$t,$type,$rc,$primaryKey,$xclusive];
@@ -360,7 +376,10 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 								$v[$kM2m] = $val = $this->scalarToArray($val,$k);
 							if(is_array($val))
 								$v[$kM2m] = $val = $this->arrayToEntity($val,$k);
-							$t = $this->findEntityTable($val,$k);
+							
+							//$t = $this->findEntityTable($val,$k);
+							$t = $k?$k:$this->findEntityTable($v);
+							
 							$pk = $this[$t]->getPrimaryKey();
 							$rc2 = $k.$typeColSuffix.'_'.$pk;
 							$interm = $this->entityFactory($inter);
@@ -429,7 +448,10 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 				$except = [];
 				foreach($v as list($val,$rc)){
 					$val->$rc =  $obj->$primaryKey;
-					$t = $this->findEntityTable($val,$k);
+					
+					//$t = $this->findEntityTable($val,$k);
+					$t = $k;
+					
 					$pk = $this[$t]->getPrimaryKey();
 					if(isset($val->$pk))
 						$except[] = $val->$pk;
