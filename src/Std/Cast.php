@@ -15,6 +15,9 @@ abstract class Cast{
 			if($value instanceof DateTime){
 				return true;
 			}
+			if($value instanceof ScalarInterface){
+				return true;
+			}
 		}
 		return false;
 	}
