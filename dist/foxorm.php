@@ -16,7 +16,7 @@ use DateTime;
 use FoxORM\Std\ScalarInterface;
 abstract class Cast{
 	static function isInt($value){
-		return (bool)(strval($value)===strval(intval($value)));
+		return is_scalar($value)&&(strval($value)===strval(intval($value)));
 	}
 	
 	static function isScalar($value, $special=false){
@@ -25,6 +25,9 @@ abstract class Cast{
 		}
 		if($special){
 			if($value instanceof DateTime){
+				return true;
+			}
+			if($value instanceof ScalarInterface){
 				return true;
 			}
 		}
@@ -69,6 +72,7 @@ abstract class CaseConvert{
 #Std/ArrayIterator.php
 
 namespace FoxORM\Std {
+use FoxORM\Std\Cast;
 use ArrayAccess;
 use Iterator;
 use JsonSerializable;
@@ -136,8 +140,8 @@ class ArrayIterator implements ArrayAccess,Iterator,JsonSerializable,Countable{
 		}
 		$a = [];
 		foreach($o as $k=>$v){
-			if(is_scalar($v)||is_null($v)){
-				$a[$k] = $v;
+			if(Cast::isScalar($v, true)){
+				$a[$k] = Cast::scalar($v);
 			}
 			else{
 				$a[$k] = $this->getArrayTree($v);
@@ -329,6 +333,7 @@ namespace FoxORM {
 use FoxORM\Std\Cast;
 use FoxORM\Std\ArrayIterator;
 use FoxORM\Std\CaseConvert;
+use FoxORM\Std\ScalarInterface;
 use FoxORM\Entity\StateFollower;
 use FoxORM\Entity\Box;
 use FoxORM\Entity\Observer;
@@ -634,10 +639,10 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 					continue;
 				}
 			}
-			elseif(is_object($v)){
+			elseif(is_object($v)&&!($v instanceof ScalarInterface)&&!($v instanceof ArrayIterator)){
 				$relation = 'one';
 			}
-			elseif(is_array($v)){
+			elseif(is_array($v)||($v instanceof ArrayIterator)){
 				$relation = 'many';
 			}
 			if($relation){
@@ -7290,6 +7295,7 @@ interface Observer{
 #Entity/Model.php
 
 namespace FoxORM\Entity {
+use FoxORM\Std\ScalarInterface;
 use FoxORM\Std\Cast;
 use FoxORM\DataSource;
 class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable{
@@ -7329,7 +7335,7 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 	}
 	
 	function __set($k,$v){
-		if(!$this->__readingState&&substr($k,0,1)!='_'&&(!isset($this->__data[$k])||$this->__data[$k]!=$v)&&(is_scalar($v)||is_null($v))){
+		if(!$this->__readingState&&substr($k,0,1)!='_'&&(!isset($this->__data[$k])||$this->__data[$k]!=$v)&&Cast::isScalar($v)){
 			$this->_modified = true;
 		}
 		if(substr($k,0,5)==='_one_'){
@@ -7339,14 +7345,14 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 				$relationKey = substr($relationKey,0,-3);
 			$relationKey = substr($relationKey,5);
 			$pk = $this->db[$relationKey]->getPrimaryKey();
-			if(!$v||(is_scalar($v)&&Cast::isInt($v))){
+			if(!$v||Cast::isInt($v)){
 				$k2 = $relationKey.'_'.$pk;
 				$v2 = $v;
 			}
-			elseif(is_scalar($v)){
+			elseif(is_scalar($v)||$v instanceof ScalarInterface){
 				$uk = $this->db[$relationKey]->getUniqTextKey();
 				$k2 = $relationKey.'_'.$uk;
-				$v2 = $v;
+				$v2 = (string)$v;
 			}
 			else{
 				$k2 = $relationKey.'_'.$pk;
@@ -7464,8 +7470,8 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 		}
 		$a = [];
 		foreach($o as $k=>$v){
-			if(is_scalar($v)||is_null($v)){
-				$a[$k] = $v;
+			if(Cast::isScalar($v,true)){
+				$a[$k] = Cast::scalar($v);
 			}
 			else{
 				$a[$k] = $this->getArrayTree($v);
@@ -7482,8 +7488,8 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 	function getArrayScalar(){
 		$a = [];
 		foreach($this->__data as $k=>$v){
-			if(is_scalar($v)||is_null($v))
-				$a[$k] = $v;
+			if(Cast::isScalar($v,true))
+				$a[$k] = Cast::scalar($v);
 		}
 		return $a;
 	}
@@ -7507,11 +7513,12 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 				( isset($this->{'_one_'.$type})&&($o=$this->{'_one_'.$type}) )
 			||	( isset($this->{'_one_'.$type.'_x_'})&&($o=$this->{'_one_'.$type.'_x_'}) )
 		){
-			if(is_scalar($o)||is_null($o)){
+			if(Cast::isScalar($o)){
 				if(Cast::isInt($o)){
 					return $o;
 				}
 				else{
+					$o = Cast::scalar($o);
 					return $this->db[$type][$o]->$primaryKey;
 				}
 			}

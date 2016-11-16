@@ -1,5 +1,6 @@
 <?php
 namespace FoxORM\Std;
+use FoxORM\Std\Cast;
 use ArrayAccess;
 use Iterator;
 use JsonSerializable;
@@ -67,8 +68,8 @@ class ArrayIterator implements ArrayAccess,Iterator,JsonSerializable,Countable{
 		}
 		$a = [];
 		foreach($o as $k=>$v){
-			if(is_scalar($v)||is_null($v)){
-				$a[$k] = $v;
+			if(Cast::isScalar($v, true)){
+				$a[$k] = Cast::scalar($v);
 			}
 			else{
 				$a[$k] = $this->getArrayTree($v);

@@ -3,6 +3,7 @@ namespace FoxORM;
 use FoxORM\Std\Cast;
 use FoxORM\Std\ArrayIterator;
 use FoxORM\Std\CaseConvert;
+use FoxORM\Std\ScalarInterface;
 use FoxORM\Entity\StateFollower;
 use FoxORM\Entity\Box;
 use FoxORM\Entity\Observer;
@@ -308,10 +309,10 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 					continue;
 				}
 			}
-			elseif(is_object($v)){
+			elseif(is_object($v)&&!($v instanceof ScalarInterface)&&!($v instanceof ArrayIterator)){
 				$relation = 'one';
 			}
-			elseif(is_array($v)){
+			elseif(is_array($v)||($v instanceof ArrayIterator)){
 				$relation = 'many';
 			}
 			if($relation){
