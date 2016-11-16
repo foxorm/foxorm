@@ -1,5 +1,6 @@
 <?php
 namespace FoxORM\DataSource;
+use FoxORM\Std\Cast;
 class Pgsql extends SQL{
 	const C_DATATYPE_INTEGER          = 0;
 	const C_DATATYPE_BIGINT           = 1;
@@ -85,13 +86,13 @@ class Pgsql extends SQL{
 		if ( self::startsWithZeros( $value ) )
 			return self::C_DATATYPE_TEXT;
 		if ( $value === FALSE || $value === TRUE || $value === NULL || ( is_numeric( $value )
-				&& self::canBeTreatedAsInt( $value )
+				&& Cast::isInt( $value )
 				&& $value <= 2147483647
 				&& $value >= -2147483647 )
 		)
 			return self::C_DATATYPE_INTEGER;
 		elseif ( is_numeric( $value )
-				&& self::canBeTreatedAsInt( $value )
+				&& Cast::isInt( $value )
 				&& $value <= 9223372036854775807
 				&& $value >= -9223372036854775807 )
 			return self::C_DATATYPE_BIGINT;

@@ -1,7 +1,6 @@
 <?php
 namespace FoxORM\DataSource;
 use FoxORM\DataSource;
-use FoxORM\FoxORM;
 class Filesystem extends DataSource{
 	private $directory;
 	function construct(array $config=[]){

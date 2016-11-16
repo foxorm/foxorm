@@ -1,5 +1,5 @@
 <?php
-namespace FoxORM\Helper;
+namespace FoxORM\Std;
 abstract class CaseConvert{
 	static function snake($str){
         return str_replace(' ', '_', strtolower(preg_replace('/([a-z])([A-Z])/', '$1 $2', $str)));

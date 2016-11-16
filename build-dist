@@ -6,8 +6,11 @@ echo "Building the one file\n";
 $src = __DIR__.'/src/';
 
 $files = [
+	'Std/Cast.php',
+	'Std/CaseConvert.php',
+	'Std/ArrayIterator.php',
+	
 	'Exception.php',
-	'ArrayIterator.php',
 	'Bases.php',
 	
 	
@@ -45,7 +48,6 @@ $files = [
 	
 	'Helper/Pagination.php',
 	'Helper/SqlLogger.php',
-	'Helper/CaseConvert.php',
 	
 	'Validation/Ruler.php',
 	'Validation/Exception.php',
@@ -63,6 +65,7 @@ $code = '';
 foreach($files as $f){
 	$file = $src.$f;
 	$raw = file_get_contents($file);
+	if($raw===false) return;
 	$raw = preg_replace('/namespace\s+([a-zA-Z0-9\\\;]+);/m', 'namespace $1 {', $raw);
 	$raw .= "\n}\n";
 	$code .= "#$f\n";
@@ -75,10 +78,12 @@ if(is_dir($src)){
 	foreach($vendorFiles as $f){
 		$file = $src.$f;
 		$raw = file_get_contents($file);
+		if($raw===false) return;
 		if(strpos($raw,'namespace')===false){
 			$raw = "namespace {\n$raw";
 		}
 		else{
+			var_dump($raw);
 			$raw = preg_replace('/namespace\s+([a-zA-Z0-9\\\;]+);/m', 'namespace $1 {', $raw);
 		}
 		$raw .= "\n}\n";
@@ -88,8 +93,7 @@ if(is_dir($src)){
 	}
 }
 
-
-$code = "<?php\n#FoxORM\n#http://foxorm.com\n\n".str_replace('<?php', '', $code);
+$code = "<?php\n#FoxORM\n#https://foxorm.com\n\n".str_replace('<?php', '', $code);
 
 $b = file_put_contents('dist/foxorm.php',$code);
 

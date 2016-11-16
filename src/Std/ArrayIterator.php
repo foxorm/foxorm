@@ -1,5 +1,5 @@
 <?php
-namespace FoxORM;
+namespace FoxORM\Std;
 use ArrayAccess;
 use Iterator;
 use JsonSerializable;

@@ -1,5 +1,6 @@
 <?php
 namespace FoxORM\Entity;
+use FoxORM\Std\Cast;
 use FoxORM\DataSource;
 class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable{
 	private $__readingState;
@@ -48,7 +49,7 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 				$relationKey = substr($relationKey,0,-3);
 			$relationKey = substr($relationKey,5);
 			$pk = $this->db[$relationKey]->getPrimaryKey();
-			if(!$v||(is_scalar($v)&&DataSource::canBeTreatedAsInt($v))){
+			if(!$v||(is_scalar($v)&&Cast::isInt($v))){
 				$k2 = $relationKey.'_'.$pk;
 				$v2 = $v;
 			}
@@ -204,7 +205,7 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 		$uk = $table->getPrimaryKey();
 		if(is_null($id)&&isset($this->$pk)) $id = $this->$pk;
 		if(is_null($id)&&isset($this->$uk)) $id = $this->$uk;
-		$k = DataSource::canBeTreatedAsInt($id)?$pk:$uk;
+		$k = Cast::isInt($id)?$pk:$uk;
 		if($table->columnExists($col))
 			return $this->db->getCell('SELECT '.$table->formatColumnName($col).' FROM '.$this->db->escTable($type).' WHERE '.$table->formatColumnName($k).' = ?',[$id]);
 	}
@@ -217,7 +218,7 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 			||	( isset($this->{'_one_'.$type.'_x_'})&&($o=$this->{'_one_'.$type.'_x_'}) )
 		){
 			if(is_scalar($o)||is_null($o)){
-				if(DataSource::canBeTreatedAsInt($o)){
+				if(Cast::isInt($o)){
 					return $o;
 				}
 				else{

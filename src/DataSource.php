@@ -1,6 +1,8 @@
 <?php
 namespace FoxORM;
-use FoxORM\Helper\CaseConvert;
+use FoxORM\Std\Cast;
+use FoxORM\Std\ArrayIterator;
+use FoxORM\Std\CaseConvert;
 use FoxORM\Entity\StateFollower;
 use FoxORM\Entity\Box;
 use FoxORM\Entity\Observer;
@@ -202,7 +204,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		else{
 			$obj = $this->entityFactory($type);
 			if($id){
-				if(self::canBeTreatedAsInt($id))
+				if(Cast::isInt($id))
 					$obj->$primaryKey = $id;
 				else
 					$obj->$uniqTextKey = $id;
@@ -240,7 +242,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		
 		if(isset($id)){
 			if($obj instanceof StateFollower) $obj->__readingState(true);
-			if($uniqTextKey&&!self::canBeTreatedAsInt($id))
+			if($uniqTextKey&&!Cast::isInt($id))
 				$obj->$uniqTextKey = $id;
 			else
 				$obj->$primaryKey = $id;
@@ -742,10 +744,6 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		return $this[$type]->offsetSet(null,$obj);
 	}
 	
-	static function canBeTreatedAsInt($value){
-		return (bool)(strval($value)===strval(intval($value)));
-	}
-	
 	static function snippet($text,$query,$tokens=15,$start='<b>',$end='</b>',$sep=' <b>...</b> '){
 		if(!trim($text))
 			return '';
@@ -847,7 +845,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 	
 	function scalarToArray($v,$type){
 		$a = ['_type'=>$type];
-		if(self::canBeTreatedAsInt($v)){
+		if(Cast::isInt($v)){
 			$a[$this[$type]->getPrimaryKey()] = $v;
 		}
 		else{

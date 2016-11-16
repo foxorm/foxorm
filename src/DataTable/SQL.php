@@ -1,5 +1,6 @@
 <?php
 namespace FoxORM\DataTable;
+use FoxORM\Std\Cast;
 use FoxORM\Exception;
 use FoxORM\DataTable;
 use FoxORM\SqlComposer\Select;
@@ -497,7 +498,7 @@ class SQL extends DataTable{
 			
 			$params = [];
 			foreach($on as $extra){
-				if(DataSourceSQL::canBeTreatedAsInt($extra)){
+				if(Cast::isInt($extra)){
 					$params[] = $extra;
 					$extra = "$tableEsc.$tablePkEsc = ?";
 				}

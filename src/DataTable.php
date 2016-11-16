@@ -1,7 +1,7 @@
 <?php
 namespace FoxORM;
 use FoxORM\Helper\Pagination;
-use FoxORM\ArrayIterator;
+use FoxORM\Std\ArrayIterator;
 abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSerializable{
 	private static $defaultEvents = [
 		'beforeRecursive',

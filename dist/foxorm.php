@@ -1,15 +1,43 @@
 <?php
 #FoxORM
-#http://foxorm.com
+#https://foxorm.com
 
-#Exception.php
+#Std/Cast.php
 
-namespace FoxORM {
-class Exception extends \Exception {}
+namespace FoxORM\Std {
+abstract class Cast{
+	static function isInt($value){
+		return (bool)(strval($value)===strval(intval($value)));
+	}
 }
-#ArrayIterator.php
+}
+#Std/CaseConvert.php
 
-namespace FoxORM {
+namespace FoxORM\Std {
+abstract class CaseConvert{
+	static function snake($str){
+        return str_replace(' ', '_', strtolower(preg_replace('/([a-z])([A-Z])/', '$1 $2', $str)));
+	}
+	static function camel($str){
+		return lcfirst(str_replace(' ', '', ucwords(str_replace('_', ' ', $str))));
+	}
+	static function pascal($str){
+		return ucfirst(str_replace(' ', '', ucwords(str_replace('_', ' ', $str))));
+	}
+	static function ucw($str){
+		return ucfirst(str_replace(' ', '_', ucwords(str_replace('_', ' ', $str))));
+	}
+	static function lcw($str){
+		return lcfirst(str_replace(' ', '_', preg_replace_callback('~\b\w~', ['self', '_lcwordsCallback'],str_replace('_', ' ', $str))));
+	}
+	private static function _lcwordsCallback($matches){
+		return strtolower($matches[0]);
+	}
+}
+}
+#Std/ArrayIterator.php
+
+namespace FoxORM\Std {
 use ArrayAccess;
 use Iterator;
 use JsonSerializable;
@@ -104,6 +132,11 @@ class ArrayIterator implements ArrayAccess,Iterator,JsonSerializable,Countable{
 		}
 	}
 }
+}
+#Exception.php
+
+namespace FoxORM {
+class Exception extends \Exception {}
 }
 #Bases.php
 
@@ -262,7 +295,9 @@ class Bases implements \ArrayAccess{
 #DataSource.php
 
 namespace FoxORM {
-use FoxORM\Helper\CaseConvert;
+use FoxORM\Std\Cast;
+use FoxORM\Std\ArrayIterator;
+use FoxORM\Std\CaseConvert;
 use FoxORM\Entity\StateFollower;
 use FoxORM\Entity\Box;
 use FoxORM\Entity\Observer;
@@ -464,7 +499,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		else{
 			$obj = $this->entityFactory($type);
 			if($id){
-				if(self::canBeTreatedAsInt($id))
+				if(Cast::isInt($id))
 					$obj->$primaryKey = $id;
 				else
 					$obj->$uniqTextKey = $id;
@@ -502,7 +537,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		
 		if(isset($id)){
 			if($obj instanceof StateFollower) $obj->__readingState(true);
-			if($uniqTextKey&&!self::canBeTreatedAsInt($id))
+			if($uniqTextKey&&!Cast::isInt($id))
 				$obj->$uniqTextKey = $id;
 			else
 				$obj->$primaryKey = $id;
@@ -1004,10 +1039,6 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		return $this[$type]->offsetSet(null,$obj);
 	}
 	
-	static function canBeTreatedAsInt($value){
-		return (bool)(strval($value)===strval(intval($value)));
-	}
-	
 	static function snippet($text,$query,$tokens=15,$start='<b>',$end='</b>',$sep=' <b>...</b> '){
 		if(!trim($text))
 			return '';
@@ -1109,7 +1140,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 	
 	function scalarToArray($v,$type){
 		$a = ['_type'=>$type];
-		if(self::canBeTreatedAsInt($v)){
+		if(Cast::isInt($v)){
 			$a[$this[$type]->getPrimaryKey()] = $v;
 		}
 		else{
@@ -1170,8 +1201,8 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 #DataSource/SQL.php
 
 namespace FoxORM\DataSource {
+use FoxORM\Std\Cast;
 use FoxORM\DataSource;
-use FoxORM\FoxORM;
 use FoxORM\Helper\SqlLogger;
 use FoxORM\Exception;
 use FoxORM\Entity\StateFollower;
@@ -1257,7 +1288,7 @@ abstract class SQL extends DataSource{
 			$primaryKey = $this[$type]->getPrimaryKey();
 		if(is_null($uniqTextKey))
 			$uniqTextKey = $this[$type]->getUniqTextKey();
-		$intId = self::canBeTreatedAsInt($id);
+		$intId = Cast::isInt($id);
 		if(!$this->tableExists($type)||(!$intId&&!in_array($uniqTextKey,array_keys($this->getColumns($type)))))
 			return;
 		$table = $this->escTable($type);
@@ -1299,7 +1330,7 @@ abstract class SQL extends DataSource{
 		return $id;
 	}
 	function readQuery($type,$id,$primaryKey='id',$uniqTextKey='uniq',$obj){
-		if($uniqTextKey&&!self::canBeTreatedAsInt($id))
+		if($uniqTextKey&&!Cast::isInt($id))
 			$primaryKey = $uniqTextKey;
 		$table = $this->escTable($type);
 		$select = $this->getSelectSnippet($type);
@@ -1340,7 +1371,7 @@ abstract class SQL extends DataSource{
 		return $id;
 	}
 	function deleteQuery($type,$id,$primaryKey='id',$uniqTextKey='uniq'){
-		if($uniqTextKey&&!self::canBeTreatedAsInt($id))
+		if($uniqTextKey&&!Cast::isInt($id))
 			$primaryKey = $uniqTextKey;
 		$this->execute('DELETE FROM '.$this->escTable($type).' WHERE '.$primaryKey.' = ?', [$id]);
 		return $this->affectedRows;
@@ -1366,7 +1397,7 @@ abstract class SQL extends DataSource{
 			if(is_integer($key)){
 				if(is_null($value))
 					$statement->bindValue( $key + 1, NULL, \PDO::PARAM_NULL );
-				elseif(!$this->flagUseStringOnlyBinding && self::canBeTreatedAsInt( $value ) && abs( $value ) <= $this->max)
+				elseif(!$this->flagUseStringOnlyBinding && Cast::isInt( $value ) && abs( $value ) <= $this->max)
 					$statement->bindParam($key+1,$value,\PDO::PARAM_INT);
 				else
 					$statement->bindParam($key+1,$value,\PDO::PARAM_STR);
@@ -1374,7 +1405,7 @@ abstract class SQL extends DataSource{
 			else{
 				if(is_null($value))
 					$statement->bindValue( $key, NULL, \PDO::PARAM_NULL );
-				elseif( !$this->flagUseStringOnlyBinding && self::canBeTreatedAsInt( $value ) && abs( $value ) <= $this->max )
+				elseif( !$this->flagUseStringOnlyBinding && Cast::isInt( $value ) && abs( $value ) <= $this->max )
 					$statement->bindParam( $key, $value, \PDO::PARAM_INT );
 				else
 					$statement->bindParam( $key, $value, \PDO::PARAM_STR );
@@ -3143,6 +3174,7 @@ class Mysql extends SQL{
 #DataSource/Pgsql.php
 
 namespace FoxORM\DataSource {
+use FoxORM\Std\Cast;
 class Pgsql extends SQL{
 	const C_DATATYPE_INTEGER          = 0;
 	const C_DATATYPE_BIGINT           = 1;
@@ -3228,13 +3260,13 @@ class Pgsql extends SQL{
 		if ( self::startsWithZeros( $value ) )
 			return self::C_DATATYPE_TEXT;
 		if ( $value === FALSE || $value === TRUE || $value === NULL || ( is_numeric( $value )
-				&& self::canBeTreatedAsInt( $value )
+				&& Cast::isInt( $value )
 				&& $value <= 2147483647
 				&& $value >= -2147483647 )
 		)
 			return self::C_DATATYPE_INTEGER;
 		elseif ( is_numeric( $value )
-				&& self::canBeTreatedAsInt( $value )
+				&& Cast::isInt( $value )
 				&& $value <= 9223372036854775807
 				&& $value >= -9223372036854775807 )
 			return self::C_DATATYPE_BIGINT;
@@ -3943,7 +3975,6 @@ class Sqlite extends SQL{
 
 namespace FoxORM\DataSource {
 use FoxORM\DataSource;
-use FoxORM\FoxORM;
 class Filesystem extends DataSource{
 	private $directory;
 	function construct(array $config=[]){
@@ -5473,7 +5504,7 @@ class Replace extends Base {
 
 namespace FoxORM {
 use FoxORM\Helper\Pagination;
-use FoxORM\ArrayIterator;
+use FoxORM\Std\ArrayIterator;
 abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSerializable{
 	private static $defaultEvents = [
 		'beforeRecursive',
@@ -5843,6 +5874,7 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 #DataTable/SQL.php
 
 namespace FoxORM\DataTable {
+use FoxORM\Std\Cast;
 use FoxORM\Exception;
 use FoxORM\DataTable;
 use FoxORM\SqlComposer\Select;
@@ -6340,7 +6372,7 @@ class SQL extends DataTable{
 			
 			$params = [];
 			foreach($on as $extra){
-				if(DataSourceSQL::canBeTreatedAsInt($extra)){
+				if(Cast::isInt($extra)){
 					$params[] = $extra;
 					$extra = "$tableEsc.$tablePkEsc = ?";
 				}
@@ -7227,6 +7259,7 @@ interface Observer{
 #Entity/Model.php
 
 namespace FoxORM\Entity {
+use FoxORM\Std\Cast;
 use FoxORM\DataSource;
 class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable{
 	private $__readingState;
@@ -7275,7 +7308,7 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 				$relationKey = substr($relationKey,0,-3);
 			$relationKey = substr($relationKey,5);
 			$pk = $this->db[$relationKey]->getPrimaryKey();
-			if(!$v||(is_scalar($v)&&DataSource::canBeTreatedAsInt($v))){
+			if(!$v||(is_scalar($v)&&Cast::isInt($v))){
 				$k2 = $relationKey.'_'.$pk;
 				$v2 = $v;
 			}
@@ -7431,7 +7464,7 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 		$uk = $table->getPrimaryKey();
 		if(is_null($id)&&isset($this->$pk)) $id = $this->$pk;
 		if(is_null($id)&&isset($this->$uk)) $id = $this->$uk;
-		$k = DataSource::canBeTreatedAsInt($id)?$pk:$uk;
+		$k = Cast::isInt($id)?$pk:$uk;
 		if($table->columnExists($col))
 			return $this->db->getCell('SELECT '.$table->formatColumnName($col).' FROM '.$this->db->escTable($type).' WHERE '.$table->formatColumnName($k).' = ?',[$id]);
 	}
@@ -7444,7 +7477,7 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 			||	( isset($this->{'_one_'.$type.'_x_'})&&($o=$this->{'_one_'.$type.'_x_'}) )
 		){
 			if(is_scalar($o)||is_null($o)){
-				if(DataSource::canBeTreatedAsInt($o)){
+				if(Cast::isInt($o)){
 					return $o;
 				}
 				else{
@@ -7807,30 +7840,6 @@ class SqlLogger {
 		if(!$this->keep&&!$this->echo)
 			return;
 		$this->output($txt);
-	}
-}
-}
-#Helper/CaseConvert.php
-
-namespace FoxORM\Helper {
-abstract class CaseConvert{
-	static function snake($str){
-        return str_replace(' ', '_', strtolower(preg_replace('/([a-z])([A-Z])/', '$1 $2', $str)));
-	}
-	static function camel($str){
-		return lcfirst(str_replace(' ', '', ucwords(str_replace('_', ' ', $str))));
-	}
-	static function pascal($str){
-		return ucfirst(str_replace(' ', '', ucwords(str_replace('_', ' ', $str))));
-	}
-	static function ucw($str){
-		return ucfirst(str_replace(' ', '_', ucwords(str_replace('_', ' ', $str))));
-	}
-	static function lcw($str){
-		return lcfirst(str_replace(' ', '_', preg_replace_callback('~\b\w~', ['self', '_lcwordsCallback'],str_replace('_', ' ', $str))));
-	}
-	private static function _lcwordsCallback($matches){
-		return strtolower($matches[0]);
 	}
 }
 }

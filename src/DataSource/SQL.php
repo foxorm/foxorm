@@ -1,7 +1,7 @@
 <?php
 namespace FoxORM\DataSource;
+use FoxORM\Std\Cast;
 use FoxORM\DataSource;
-use FoxORM\FoxORM;
 use FoxORM\Helper\SqlLogger;
 use FoxORM\Exception;
 use FoxORM\Entity\StateFollower;
@@ -87,7 +87,7 @@ abstract class SQL extends DataSource{
 			$primaryKey = $this[$type]->getPrimaryKey();
 		if(is_null($uniqTextKey))
 			$uniqTextKey = $this[$type]->getUniqTextKey();
-		$intId = self::canBeTreatedAsInt($id);
+		$intId = Cast::isInt($id);
 		if(!$this->tableExists($type)||(!$intId&&!in_array($uniqTextKey,array_keys($this->getColumns($type)))))
 			return;
 		$table = $this->escTable($type);
@@ -129,7 +129,7 @@ abstract class SQL extends DataSource{
 		return $id;
 	}
 	function readQuery($type,$id,$primaryKey='id',$uniqTextKey='uniq',$obj){
-		if($uniqTextKey&&!self::canBeTreatedAsInt($id))
+		if($uniqTextKey&&!Cast::isInt($id))
 			$primaryKey = $uniqTextKey;
 		$table = $this->escTable($type);
 		$select = $this->getSelectSnippet($type);
@@ -170,7 +170,7 @@ abstract class SQL extends DataSource{
 		return $id;
 	}
 	function deleteQuery($type,$id,$primaryKey='id',$uniqTextKey='uniq'){
-		if($uniqTextKey&&!self::canBeTreatedAsInt($id))
+		if($uniqTextKey&&!Cast::isInt($id))
 			$primaryKey = $uniqTextKey;
 		$this->execute('DELETE FROM '.$this->escTable($type).' WHERE '.$primaryKey.' = ?', [$id]);
 		return $this->affectedRows;
@@ -196,7 +196,7 @@ abstract class SQL extends DataSource{
 			if(is_integer($key)){
 				if(is_null($value))
 					$statement->bindValue( $key + 1, NULL, \PDO::PARAM_NULL );
-				elseif(!$this->flagUseStringOnlyBinding && self::canBeTreatedAsInt( $value ) && abs( $value ) <= $this->max)
+				elseif(!$this->flagUseStringOnlyBinding && Cast::isInt( $value ) && abs( $value ) <= $this->max)
 					$statement->bindParam($key+1,$value,\PDO::PARAM_INT);
 				else
 					$statement->bindParam($key+1,$value,\PDO::PARAM_STR);
@@ -204,7 +204,7 @@ abstract class SQL extends DataSource{
 			else{
 				if(is_null($value))
 					$statement->bindValue( $key, NULL, \PDO::PARAM_NULL );
-				elseif( !$this->flagUseStringOnlyBinding && self::canBeTreatedAsInt( $value ) && abs( $value ) <= $this->max )
+				elseif( !$this->flagUseStringOnlyBinding && Cast::isInt( $value ) && abs( $value ) <= $this->max )
 					$statement->bindParam( $key, $value, \PDO::PARAM_INT );
 				else
 					$statement->bindParam( $key, $value, \PDO::PARAM_STR );
