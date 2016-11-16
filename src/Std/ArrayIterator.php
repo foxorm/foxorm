@@ -68,7 +68,7 @@ class ArrayIterator implements ArrayAccess,Iterator,JsonSerializable,Countable{
 		}
 		$a = [];
 		foreach($o as $k=>$v){
-			if(Cast::isScalar($v, true)){
+			if(Cast::isScalar($v)){
 				$a[$k] = Cast::scalar($v);
 			}
 			else{

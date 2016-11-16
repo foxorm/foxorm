@@ -7,7 +7,7 @@ abstract class Cast{
 		return is_scalar($value)&&(strval($value)===strval(intval($value)));
 	}
 	
-	static function isScalar($value, $special=false){
+	static function isScalar($value, $special=true){
 		if(is_scalar($value)||is_null($value)){
 			return true;
 		}
