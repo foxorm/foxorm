@@ -95,11 +95,38 @@ if(is_dir($src)){
 
 $code = "<?php\n#FoxORM\n#https://foxorm.com\n\n".str_replace('<?php', '', $code);
 
-$b = file_put_contents('dist/foxorm.php',$code);
+$b = file_put_contents('dist/foxorm.phps',$code);
 
+$tokens = token_get_all(trim($code));
+$code = '';
+$pending_whitespace = count($tokens)?"\n":'';
+$tokensMin = [];
+foreach($tokens as $t) {
+	if(!is_array($t))
+		$t = [-1, $t];
+	if($t[0] == T_COMMENT || $t[0] == T_DOC_COMMENT)
+		continue;
+	if($t[0] == T_WHITESPACE) {
+		$pending_whitespace .= $t[1];
+		continue;
+	}				
+	
+	$text = $t[1];
+	if(!strlen($text))
+		continue;
+	$l = strlen($code)-1;
+	if(preg_match("~^\\w\\w$~", (isset($code[$l])?$code[$l]:'').$text[0]))
+		$code .= ' ';
+	$code .= $text;
+	
+	$pending_whitespace = '';
+}
+$code = "<?php /*FoxORM https://foxorm.com*/".trim(str_replace('<?php', '', $code));
+$b = file_put_contents('dist/foxorm.php',$code);
 
 if($b>0){
 	echo "Written: $b bytes\n";
+	//include 'dist/foxorm.phps';
 	include 'dist/foxorm.php';
 	echo "Done !\n";
 }
