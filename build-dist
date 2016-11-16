@@ -6,6 +6,7 @@ echo "Building the one file\n";
 $src = __DIR__.'/src/';
 
 $files = [
+	'Std/ScalarInterface.php',
 	'Std/Cast.php',
 	'Std/CaseConvert.php',
 	'Std/ArrayIterator.php',
