@@ -40,7 +40,7 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 	}
 	
 	function __set($k,$v){
-		if(!$this->__readingState&&substr($k,0,1)!='_'&&(!isset($this->__data[$k])||$this->__data[$k]!=$v)&&Cast::isScalar($v)){
+		if(!$this->__readingState&&substr($k,0,1)!='_'&&(!isset($this->__data[$k])||$this->__data[$k]!=$v)&&Cast::isScalar($v,true)){
 			$this->_modified = true;
 		}
 		if(substr($k,0,5)==='_one_'){
@@ -222,7 +222,7 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 				( isset($this->{'_one_'.$type})&&($o=$this->{'_one_'.$type}) )
 			||	( isset($this->{'_one_'.$type.'_x_'})&&($o=$this->{'_one_'.$type.'_x_'}) )
 		){
-			if(Cast::isScalar($o)){
+			if(Cast::isScalar($o,true)){
 				if(Cast::isInt($o)){
 					return $o;
 				}

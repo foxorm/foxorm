@@ -111,7 +111,7 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 		if(is_array($id)){
 			$id = $this->entityFactory($id);
 		}
-		if(Cast::isScalar($id)){
+		if(Cast::isScalar($id,true)){
 			$id = Cast::scalar($id);
 		}
 		$offset = is_object($id)?$id->{$this->primaryKey}:$id;
@@ -305,7 +305,7 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 			if(is_array($mixed)){
 				$mixed = $mixed[$pk];
 			}
-			elseif(Cast::isScalar($mixed)){
+			elseif(Cast::isScalar($mixed,true)){
 				$mixed = Cast::scalar($mixed);
 			}
 			elseif(is_object($mixed)){
@@ -321,7 +321,7 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 				$id = $mixed[$pk];
 				$obj = $mixed;
 			}
-			elseif(Cast::isScalar($mixed)){
+			elseif(Cast::isScalar($mixed,true)){
 				$id = Cast::scalar($mixed);
 				$obj = $this->read($id);
 			}
@@ -345,7 +345,7 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 			if(is_array($mixed)){
 				$mixed = $mixed[$pk];
 			}
-			elseif(Cast::isScalar($mixed)){
+			elseif(Cast::isScalar($mixed,true)){
 				$mixed = Cast::scalar($mixed);
 			}
 			elseif(is_object($mixed)){
