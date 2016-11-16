@@ -88,4 +88,9 @@ class ArrayIterator implements ArrayAccess,Iterator,JsonSerializable,Countable{
 		return $o;
 	}
 	
+	function __clone(){
+		foreach($this->data as $k=>$o){
+			$this->data[$k] = clone $o;
+		}
+	}
 }
