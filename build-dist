@@ -7,7 +7,9 @@ $src = __DIR__.'/src/';
 
 $files = [
 	'Exception.php',
+	'ArrayIterator.php',
 	'Bases.php',
+	
 	
 	'DataSource.php',
 	'DataSource/SQL.php',
