@@ -121,6 +121,10 @@ foreach($tokens as $t) {
 	
 	$pending_whitespace = '';
 }
+
+$code = str_replace(["\n","\t"],' ',$code);
+$code = preg_replace('/\s{2,}/',' ',$code);
+
 $code = "<?php /*FoxORM https://foxorm.com*/".trim(str_replace('<?php', '', $code));
 $b = file_put_contents('dist/foxorm.php',$code);
 
