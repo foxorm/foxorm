@@ -289,6 +289,11 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 			if($xclusive)
 				$k = substr($k,0,-3);
 			$relation = false;
+			
+			if(Cast::isScalar($v)){
+				$v = Cast::scalar($v);
+			}
+			
 			if(substr($k,0,1)=='_'){
 				if(substr($k,1,4)=='one_'){
 					$k = substr($k,5);
@@ -316,7 +321,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 					continue;
 				}
 			}
-			elseif(is_object($v)&&!($v instanceof ScalarInterface)&&!($v instanceof ArrayIterator)){
+			elseif(is_object($v)&&!($v instanceof ArrayIterator)){
 				$relation = 'one';
 			}
 			elseif(is_array($v)||($v instanceof ArrayIterator)){
