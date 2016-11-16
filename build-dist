@@ -84,7 +84,6 @@ if(is_dir($src)){
 			$raw = "namespace {\n$raw";
 		}
 		else{
-			var_dump($raw);
 			$raw = preg_replace('/namespace\s+([a-zA-Z0-9\\\;]+);/m', 'namespace $1 {', $raw);
 		}
 		$raw .= "\n}\n";
@@ -97,6 +96,7 @@ if(is_dir($src)){
 $code = "<?php\n#FoxORM\n#https://foxorm.com\n\n".str_replace('<?php', '', $code);
 
 $b = file_put_contents('dist/foxorm.php',$code);
+
 
 if($b>0){
 	echo "Written: $b bytes\n";
