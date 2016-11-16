@@ -4,7 +4,7 @@ use DateTime;
 use FoxORM\Std\ScalarInterface;
 abstract class Cast{
 	static function isInt($value){
-		return (bool)(strval($value)===strval(intval($value)));
+		return is_scalar($value)&&(strval($value)===strval(intval($value)));
 	}
 	
 	static function isScalar($value, $special=false){
