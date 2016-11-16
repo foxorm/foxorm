@@ -195,6 +195,9 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 	function deleteRow($type,$id,$primaryKey='id',$uniqTextKey='uniq'){
 		if(!$this->tableExists($type))
 			return;
+		if(Cast::isScalar($id)){
+			$id = Cast::scalar($id);
+		}
 		if(is_object($id)){
 			$obj = $id;
 			if(isset($obj->$primaryKey))
@@ -666,12 +669,12 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 					continue;
 				if(is_array($v)){
 					foreach($v as $val){
-						if(is_object($val)){
+						if(is_object($val)&&!Cast::isScalar($v)){
 							$this->trigger($val->_type, $event, $val, $recursive, $flow);
 						}
 					}
 				}
-				elseif(is_object($v)){
+				elseif(is_object($v)&&!Cast::isScalar($v)){
 					$this->trigger($v->_type, $event, $v, $recursive, $flow);
 				}
 			}				

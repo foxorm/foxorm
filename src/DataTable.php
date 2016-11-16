@@ -1,6 +1,7 @@
 <?php
 namespace FoxORM;
 use FoxORM\Helper\Pagination;
+use FoxORM\Std\Cast;
 use FoxORM\Std\ArrayIterator;
 abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSerializable{
 	private static $defaultEvents = [
@@ -109,6 +110,9 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 	function offsetUnset($id){
 		if(is_array($id)){
 			$id = $this->entityFactory($id);
+		}
+		if(Cast::isScalar($id)){
+			$id = Cast::scalar($id);
 		}
 		$offset = is_object($id)?$id->{$this->primaryKey}:$id;
 		if(isset($this->data[$offset]))
@@ -301,6 +305,9 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 			if(is_array($mixed)){
 				$mixed = $mixed[$pk];
 			}
+			elseif(Cast::isScalar($mixed)){
+				$mixed = Cast::scalar($mixed);
+			}
 			elseif(is_object($mixed)){
 				$mixed = $mixed->$pk;
 			}
@@ -313,6 +320,10 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 			if(is_array($mixed)){
 				$id = $mixed[$pk];
 				$obj = $mixed;
+			}
+			elseif(Cast::isScalar($mixed)){
+				$id = Cast::scalar($mixed);
+				$obj = $this->read($id);
 			}
 			elseif(is_object($mixed)){
 				$id = $mixed->$pk;
@@ -333,6 +344,9 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 			$pk = $this->getPrimaryKey();
 			if(is_array($mixed)){
 				$mixed = $mixed[$pk];
+			}
+			elseif(Cast::isScalar($mixed)){
+				$mixed = Cast::scalar($mixed);
 			}
 			elseif(is_object($mixed)){
 				$mixed = $mixed->$pk;
