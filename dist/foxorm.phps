@@ -482,7 +482,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 	
 	function isPrimaryKeyOf($col){
 		$x = explode('_',$col);
-		if($c<2) return;
+		if(count($x)<2) return;
 		$pk = array_pop($x);
 		$table = implode('_',$x);
 		if($pk==$this->getTablePrimaryKey($table)){
@@ -711,22 +711,32 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 					continue;
 				}
 			}
-			elseif(is_object($v)&&!($v instanceof ArrayIterator)){
-				$relation = 'one';
-			}
 			elseif(is_array($v)||($v instanceof ArrayIterator)){
 				$relation = 'many';
+			}
+			elseif(is_object($v)){
+				$relation = 'one';
+			}
+			elseif($t = $this->isPrimaryKeyOf($k)){
+				$relation = 'oneByPK';
 			}
 			
 			if($relation){
 				switch($relation){
+					case 'oneByPK':
+						$pk = $this[$t]->getPrimaryKey();
+						$rc = $t.'_'.$pk;
+						$addFK = [$type,$t,$rc,$pk,$xclusive];
+						if(!in_array($addFK,$fk))
+							$fk[] = $addFK;
+						$properties[$k] = $v;
+					break;
 					case 'one':
 						if(is_scalar($v))
 							$v = $this->scalarToArray($v,$k);
 						if(is_array($v))
 							$v = $this->arrayToEntity($v,$k);
 						
-						//$t = $this->findEntityTable($v,$k);
 						$t = $k?$k:$this->findEntityTable($v);
 						
 						$pk = $this[$t]->getPrimaryKey();
@@ -757,7 +767,6 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 							if(is_array($val))
 								$v[$mk] = $val = $this->arrayToEntity($val,$k);
 							
-							//$t = $this->findEntityTable($val,$k);
 							$t = $k?$k:$this->findEntityTable($v);
 							
 							$rc = $type.'_'.$primaryKey;
@@ -792,7 +801,6 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 							if(is_array($val))
 								$v[$kM2m] = $val = $this->arrayToEntity($val,$k);
 							
-							//$t = $this->findEntityTable($val,$k);
 							$t = $k?$k:$this->findEntityTable($v);
 							
 							$pk = $this[$t]->getPrimaryKey();
@@ -866,7 +874,6 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 				foreach($v as list($val,$rc)){
 					$val->$rc =  $obj->$primaryKey;
 					
-					//$t = $this->findEntityTable($val,$k);
 					$t = $k;
 					
 					$pk = $this[$t]->getPrimaryKey();
@@ -7437,10 +7444,11 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 	}
 	
 	function __set($k,$v){
-		if(!$this->__readingState&&substr($k,0,1)!='_'&&(!isset($this->__data[$k])||$this->__data[$k]!=$v)&&Cast::isScalar($v)){
+		$meta = substr($k,0,1)=='_';
+		if(!$this->__readingState&&!$meta&&(!isset($this->__data[$k])||$this->__data[$k]!=$v)&&Cast::isScalar($v)){
 			$this->_modified = true;
 		}
-		if(substr($k,0,5)==='_one_'){
+		if($meta&&substr($k,0,5)==='_one_'){
 			$relationKey = $k;
 			$xclusive = substr($relationKey,-3)=='_x_';
 			if($xclusive)
@@ -7448,20 +7456,17 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 			$relationKey = substr($relationKey,5);
 			$pk = $this->db[$relationKey]->getPrimaryKey();
 			if(!$v||Cast::isInt($v)){
-				$k2 = $relationKey.'_'.$pk;
-				$v2 = $v;
+				$k = $relationKey.'_'.$pk;
 			}
 			elseif(is_scalar($v)||Cast::isScalar($v)){
 				$uk = $this->db[$relationKey]->getUniqTextKey();
-				$k2 = $relationKey.'_'.$uk;
-				$v2 = Cast::scalar($v);
+				$k = $relationKey.'_'.$uk;
+				$v = Cast::scalar($v);
 			}
 			else{
-				$k2 = $relationKey.'_'.$pk;
-				$v2 = is_object($v)?$v->$pk:$v[$pk];
+				$k = $relationKey.'_'.$pk;
+				$v = is_object($v)?$v->$pk:$v[$pk];
 			}
-			$this->__data[$k2] = $v2;
-			$this->__cursor[$k2] = &$this->__data[$k2];
 		}
 		$this->__cursor[$k] = &$this->__data[$k];
 		$this->__data[$k] = $v;
