@@ -331,11 +331,11 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 					continue;
 				}
 			}
-			elseif(is_object($v)&&!($v instanceof ArrayIterator)){
-				$relation = 'one';
-			}
 			elseif(is_array($v)||($v instanceof ArrayIterator)){
 				$relation = 'many';
+			}
+			elseif(is_object($v)){
+				$relation = 'one';
 			}
 			
 			if($relation){
