@@ -102,7 +102,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 	
 	function isPrimaryKeyOf($col){
 		$x = explode('_',$col);
-		if($c<2) return;
+		if(count($x)<2) return;
 		$pk = array_pop($x);
 		$table = implode('_',$x);
 		if($pk==$this->getTablePrimaryKey($table)){
