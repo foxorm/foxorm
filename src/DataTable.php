@@ -57,10 +57,10 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 		return $this->dataSource;
 	}
 	function setUniqTextKey($uniqTextKey='uniq'){
-		$this->uniqTextKey = $uniqTextKey;
+		$this->dataSource->setTableUniqTextKey($this->name,$uniqTextKey);
 	}
 	function setPrimaryKey($primaryKey='id'){
-		$this->primaryKey = $primaryKey;
+		$this->dataSource->setTablePrimaryKey($this->name,$primaryKey);
 	}
 	function offsetExists($id){
 		return (bool)$this->readId($id);
