@@ -346,7 +346,6 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 						if(is_array($v))
 							$v = $this->arrayToEntity($v,$k);
 						
-						//$t = $this->findEntityTable($v,$k);
 						$t = $k?$k:$this->findEntityTable($v);
 						
 						$pk = $this[$t]->getPrimaryKey();
@@ -377,7 +376,6 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 							if(is_array($val))
 								$v[$mk] = $val = $this->arrayToEntity($val,$k);
 							
-							//$t = $this->findEntityTable($val,$k);
 							$t = $k?$k:$this->findEntityTable($v);
 							
 							$rc = $type.'_'.$primaryKey;
@@ -412,7 +410,6 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 							if(is_array($val))
 								$v[$kM2m] = $val = $this->arrayToEntity($val,$k);
 							
-							//$t = $this->findEntityTable($val,$k);
 							$t = $k?$k:$this->findEntityTable($v);
 							
 							$pk = $this[$t]->getPrimaryKey();
@@ -486,7 +483,6 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 				foreach($v as list($val,$rc)){
 					$val->$rc =  $obj->$primaryKey;
 					
-					//$t = $this->findEntityTable($val,$k);
 					$t = $k;
 					
 					$pk = $this[$t]->getPrimaryKey();
