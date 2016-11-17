@@ -19,7 +19,7 @@ abstract class Cast{
 		return is_scalar($value)&&(strval($value)===strval(intval($value)));
 	}
 	
-	static function isScalar($value, $special=false){
+	static function isScalar($value, $special=true){
 		if(is_scalar($value)||is_null($value)){
 			return true;
 		}
@@ -140,7 +140,7 @@ class ArrayIterator implements ArrayAccess,Iterator,JsonSerializable,Countable{
 		}
 		$a = [];
 		foreach($o as $k=>$v){
-			if(Cast::isScalar($v, true)){
+			if(Cast::isScalar($v)){
 				$a[$k] = Cast::scalar($v);
 			}
 			else{
@@ -525,6 +525,9 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 	function deleteRow($type,$id,$primaryKey='id',$uniqTextKey='uniq'){
 		if(!$this->tableExists($type))
 			return;
+		if(Cast::isScalar($id)){
+			$id = Cast::scalar($id);
+		}
 		if(is_object($id)){
 			$obj = $id;
 			if(isset($obj->$primaryKey))
@@ -616,6 +619,11 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 			if($xclusive)
 				$k = substr($k,0,-3);
 			$relation = false;
+			
+			if(Cast::isScalar($v)){
+				$v = Cast::scalar($v);
+			}
+			
 			if(substr($k,0,1)=='_'){
 				if(substr($k,1,4)=='one_'){
 					$k = substr($k,5);
@@ -639,12 +647,13 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 					continue;
 				}
 			}
-			elseif(is_object($v)&&!($v instanceof ScalarInterface)&&!($v instanceof ArrayIterator)){
+			elseif(is_object($v)&&!($v instanceof ArrayIterator)){
 				$relation = 'one';
 			}
 			elseif(is_array($v)||($v instanceof ArrayIterator)){
 				$relation = 'many';
 			}
+			
 			if($relation){
 				switch($relation){
 					case 'one':
@@ -996,12 +1005,12 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 					continue;
 				if(is_array($v)){
 					foreach($v as $val){
-						if(is_object($val)){
+						if(is_object($val)&&!Cast::isScalar($v)){
 							$this->trigger($val->_type, $event, $val, $recursive, $flow);
 						}
 					}
 				}
-				elseif(is_object($v)){
+				elseif(is_object($v)&&!Cast::isScalar($v)){
 					$this->trigger($v->_type, $event, $v, $recursive, $flow);
 				}
 			}				
@@ -5540,6 +5549,7 @@ class Replace extends Base {
 
 namespace FoxORM {
 use FoxORM\Helper\Pagination;
+use FoxORM\Std\Cast;
 use FoxORM\Std\ArrayIterator;
 abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSerializable{
 	private static $defaultEvents = [
@@ -5648,6 +5658,9 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 	function offsetUnset($id){
 		if(is_array($id)){
 			$id = $this->entityFactory($id);
+		}
+		if(Cast::isScalar($id)){
+			$id = Cast::scalar($id);
 		}
 		$offset = is_object($id)?$id->{$this->primaryKey}:$id;
 		if(isset($this->data[$offset]))
@@ -5840,6 +5853,9 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 			if(is_array($mixed)){
 				$mixed = $mixed[$pk];
 			}
+			elseif(Cast::isScalar($mixed)){
+				$mixed = Cast::scalar($mixed);
+			}
 			elseif(is_object($mixed)){
 				$mixed = $mixed->$pk;
 			}
@@ -5852,6 +5868,10 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 			if(is_array($mixed)){
 				$id = $mixed[$pk];
 				$obj = $mixed;
+			}
+			elseif(Cast::isScalar($mixed)){
+				$id = Cast::scalar($mixed);
+				$obj = $this->read($id);
 			}
 			elseif(is_object($mixed)){
 				$id = $mixed->$pk;
@@ -5872,6 +5892,9 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 			$pk = $this->getPrimaryKey();
 			if(is_array($mixed)){
 				$mixed = $mixed[$pk];
+			}
+			elseif(Cast::isScalar($mixed)){
+				$mixed = Cast::scalar($mixed);
 			}
 			elseif(is_object($mixed)){
 				$mixed = $mixed->$pk;
@@ -7349,10 +7372,10 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 				$k2 = $relationKey.'_'.$pk;
 				$v2 = $v;
 			}
-			elseif(is_scalar($v)||$v instanceof ScalarInterface){
+			elseif(is_scalar($v)||Cast::isScalar($v)){
 				$uk = $this->db[$relationKey]->getUniqTextKey();
 				$k2 = $relationKey.'_'.$uk;
-				$v2 = (string)$v;
+				$v2 = Cast::scalar($v);
 			}
 			else{
 				$k2 = $relationKey.'_'.$pk;
@@ -7470,7 +7493,7 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 		}
 		$a = [];
 		foreach($o as $k=>$v){
-			if(Cast::isScalar($v,true)){
+			if(Cast::isScalar($v)){
 				$a[$k] = Cast::scalar($v);
 			}
 			else{
@@ -7488,7 +7511,7 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 	function getArrayScalar(){
 		$a = [];
 		foreach($this->__data as $k=>$v){
-			if(Cast::isScalar($v,true))
+			if(Cast::isScalar($v))
 				$a[$k] = Cast::scalar($v);
 		}
 		return $a;
