@@ -54,10 +54,10 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 				$k2 = $relationKey.'_'.$pk;
 				$v2 = $v;
 			}
-			elseif(is_scalar($v)||$v instanceof ScalarInterface){
+			elseif(is_scalar($v)||Cast::isScalar($v)){
 				$uk = $this->db[$relationKey]->getUniqTextKey();
 				$k2 = $relationKey.'_'.$uk;
-				$v2 = (string)$v;
+				$v2 = Cast::scalar($v);
 			}
 			else{
 				$k2 = $relationKey.'_'.$pk;
