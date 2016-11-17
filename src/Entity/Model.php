@@ -52,20 +52,17 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 			$relationKey = substr($relationKey,5);
 			$pk = $this->db[$relationKey]->getPrimaryKey();
 			if(!$v||Cast::isInt($v)){
-				$k2 = $relationKey.'_'.$pk;
-				$v2 = $v;
+				$k = $relationKey.'_'.$pk;
 			}
 			elseif(is_scalar($v)||Cast::isScalar($v)){
 				$uk = $this->db[$relationKey]->getUniqTextKey();
-				$k2 = $relationKey.'_'.$uk;
-				$v2 = Cast::scalar($v);
+				$k = $relationKey.'_'.$uk;
+				$v = Cast::scalar($v);
 			}
 			else{
-				$k2 = $relationKey.'_'.$pk;
-				$v2 = is_object($v)?$v->$pk:$v[$pk];
+				$k = $relationKey.'_'.$pk;
+				$v = is_object($v)?$v->$pk:$v[$pk];
 			}
-			$this->__data[$k2] = $v2;
-			$this->__cursor[$k2] = &$this->__data[$k2];
 		}
 		$this->__cursor[$k] = &$this->__data[$k];
 		$this->__data[$k] = $v;
