@@ -35,7 +35,7 @@ class Pgsql extends SQL{
 	}
 
 	function fullTextSearch($text,$columns=[],$alias=null,$toVector=null){
-		$indexName = $this->dataSource->addFtsColumn($this->name,$columns,$this->primaryKey,$this->uniqTextKey,$this->fullTextSearchLang);
+		$indexName = $this->dataSource->addFtsColumn($this->name,$columns,$this->getPrimaryKey(),$this->getUniqTextKey(),$this->fullTextSearchLang);
 		$lang = $this->fullTextSearchLang?"'".$this->fullTextSearchLang."',":'';
 		$c = $this->select->formatColumnName($indexName);
 		if(!$alias) $alias = $indexName.'_rank';

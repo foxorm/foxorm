@@ -6,10 +6,14 @@ class TableWrapper implements \ArrayAccess,\Iterator,\Countable,\JsonSerializabl
 	protected $type;
 	protected $db;
 	protected $dataTable;
+	protected $uniqTextKey;
 	function __construct($type, DataSource $db=null, DataTable $table=null){
 		$this->type = $type;
 		$this->db = $db;
 		$this->dataTable = $table;
+		if(isset($this->uniqTextKey)){
+			$this->setUniqTextKey($this->uniqTextKey);
+		}
 	}
 	function __call($f,$args){
 		if(method_exists($this->dataTable,$f)){

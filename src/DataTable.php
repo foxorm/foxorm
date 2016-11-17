@@ -22,8 +22,6 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 	];
 	private $events = [];	
 	protected $name;
-	protected $primaryKey;
-	protected $uniqTextKey;
 	protected $dataSource;
 	protected $data = [];
 	protected $useCache = false;
@@ -32,7 +30,7 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 	protected $tableWrapper;
 	protected $isOptional = false;
 	
-	function __construct($name,$primaryKey='id',$uniqTextKey='uniq',$dataSource){
+	function __construct($name,$dataSource){
 		
 		if($p=strpos($name,':')){
 			$tableWrapper = substr($name,$p+1);
@@ -43,26 +41,17 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 		}
 		
 		$this->name = $name;
-		$this->primaryKey = $primaryKey;
-		$this->uniqTextKey = $uniqTextKey;
 		$this->dataSource = $dataSource;
 		$this->tableWrapper = $dataSource->tableWrapperFactory($name,$this,$tableWrapper);
-		
-		if($this->tableWrapper && method_exists($this->tableWrapper,'getUniqTextKey')){
-			$uniqTextKey = $this->tableWrapper->getUniqTextKey();
-			if($uniqTextKey){
-				$this->uniqTextKey = $uniqTextKey;
-			}
-		}
 		
 		foreach(self::$defaultEvents as $event)
 			$this->on($event);
 	}
 	function getPrimaryKey(){
-		return $this->primaryKey;
+		return $this->dataSource->getTablePrimaryKey($this->name);
 	}
 	function getUniqTextKey(){
-		return $this->uniqTextKey;
+		return $this->dataSource->getTableUniqTextKey($this->name);
 	}
 	function getDataSource(){
 		return $this->dataSource;
@@ -95,7 +84,7 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 		}
 		if(!$id){
 			$id = $this->putRow($obj);
-			$obj->{$this->primaryKey} = $id;
+			$obj->{$this->getPrimaryKey()} = $id;
 		}
 		elseif($obj===null){
 			return $this->offsetUnset($id);
@@ -114,7 +103,7 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 		if(Cast::isScalar($id)){
 			$id = Cast::scalar($id);
 		}
-		$offset = is_object($id)?$id->{$this->primaryKey}:$id;
+		$offset = is_object($id)?$id->{$this->getPrimaryKey()}:$id;
 		if(isset($this->data[$offset]))
 			unset($this->data[$offset]);
 		return $this->deleteRow($id);
@@ -161,16 +150,16 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 		$this->data = [];
 	}
 	function readId($id){
-		return $this->dataSource->readId($this->name,$id,$this->primaryKey,$this->uniqTextKey);
+		return $this->dataSource->readId($this->name,$id,$this->getPrimaryKey(),$this->getUniqTextKey());
 	}
 	function readRow($id){
-		return $this->dataSource->readRow($this->name,$id,$this->primaryKey,$this->uniqTextKey);
+		return $this->dataSource->readRow($this->name,$id,$this->getPrimaryKey(),$this->getUniqTextKey());
 	}
 	function putRow($obj,$id=null){
-		return $this->dataSource->putRow($this->name,$obj,$id,$this->primaryKey,$this->uniqTextKey);
+		return $this->dataSource->putRow($this->name,$obj,$id,$this->getPrimaryKey(),$this->getUniqTextKey());
 	}
 	function deleteRow($id){
-		return $this->dataSource->deleteRow($this->name,$id,$this->primaryKey,$this->uniqTextKey);
+		return $this->dataSource->deleteRow($this->name,$id,$this->getPrimaryKey(),$this->getUniqTextKey());
 	}
 	
 	function loadOne($obj){

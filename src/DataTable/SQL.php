@@ -18,8 +18,8 @@ class SQL extends DataTable{
 	protected $hasSelectRelational;
 	protected $tablePrefix;
 	protected $quoteCharacter;
-	function __construct($name,$primaryKey='id',$uniqTextKey='uniq', DataSourceSQL $dataSource){
-		parent::__construct($name,$primaryKey,$uniqTextKey,$dataSource);
+	function __construct($name,DataSourceSQL $dataSource){
+		parent::__construct($name,$dataSource);
 		$this->tablePrefix = $dataSource->getTablePrefix();
 		$this->quoteCharacter = $dataSource->getQuoteCharacter();
 		$this->select = $this->selectQuery();
@@ -151,8 +151,8 @@ class SQL extends DataTable{
 			$all = $this->dataSource->explodeAggTable($all);
 		foreach($all as $row){
 			$row = $this->dataSource->arrayToEntity($row,$this->name);
-			if(isset($row->{$this->primaryKey}))
-				$table[$row->{$this->primaryKey}] = $row;
+			if(isset($row->{$this->getPrimaryKey()}))
+				$table[$row->{$this->getPrimaryKey()}] = $row;
 			else
 				$table[] = $row;
 		}
@@ -177,7 +177,7 @@ class SQL extends DataTable{
 	}
 	function key(){
 		if($this->row)
-			return $this->row->{$this->primaryKey};
+			return $this->row->{$this->getPrimaryKey()};
 	}
 	function valid(){
 		return (bool)$this->row;
@@ -199,7 +199,7 @@ class SQL extends DataTable{
 				$this->row->$k = $v;
 			}
 			if($this->useCache){
-				$pk = isset($this->row->{$this->primaryKey})?$this->row->{$this->primaryKey}:count($this->data)+1;
+				$pk = isset($this->row->{$this->getPrimaryKey()})?$this->row->{$this->getPrimaryKey()}:count($this->data)+1;
 				$this->data[$pk] = $this->row;
 			}
 		}
@@ -236,7 +236,7 @@ class SQL extends DataTable{
 			->getClone()
 			->unOrderBy()
 			->unSelect()
-			->select($this->primaryKey)
+			->select($this->getPrimaryKey())
 		;
 		$select
 			->select('COUNT(*)')

@@ -33,7 +33,7 @@ class Mysql extends SQL{
 	}
 	function fullTextSearchInnoDB($text,$mode='',&$columns=[]){
 		$table = $this->dataSource->escTable($this->name);
-		$this->dataSource->addFtsIndex($this->name,$columns,$this->primaryKey,$this->uniqTextKey);
+		$this->dataSource->addFtsIndex($this->name,$columns,$this->getPrimaryKey(),$this->getUniqTextKey());
 		$cols = '`'.implode('`,`',$columns).'`';
 		$this->where('MATCH('.$cols.') AGAINST (? '.$mode.')',[$text]);
 		$this->select('MATCH('.$cols.') AGAINST (? '.$mode.') AS _rank',[$text]);
@@ -46,9 +46,9 @@ class Mysql extends SQL{
 	function fullTextSearchMyISAM($text,$mode='',&$columns=[]){
 		$table = $this->dataSource->escTable($this->name);
 		$ftsTable = $this->dataSource->escTable($this->name.$this->dataSource->getFtsTableSuffix());
-		$this->dataSource->makeFtsTableAndIndex($this->name,$columns,$this->primaryKey,$this->uniqTextKey);
+		$this->dataSource->makeFtsTableAndIndex($this->name,$columns,$this->getPrimaryKey(),$this->getUniqTextKey());
 		$cols = '`'.implode('`,`',$columns).'`';
-		$pk = $this->dataSource->esc($this->primaryKey);
+		$pk = $this->dataSource->esc($this->getPrimaryKey());
 		$this->select($table.'.*');
 		$this->unFrom($table);
 		$limit = $this->getLimit();

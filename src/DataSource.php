@@ -54,6 +54,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 	function getType(){
 		return $this->type;
 	}
+	
 	function getUniqTextKey(){
 		return $this->uniqTextKey;
 	}
@@ -65,6 +66,19 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 	}
 	function setPrimaryKey($primaryKey='id'){
 		$this->primaryKey = $primaryKey;
+	}
+	
+	function setTableUniqTextKey($table,$uniqTextKey='uniq'){
+		$this->uniqTextKeys[$table] = $uniqTextKey;
+	}
+	function setTablePrimaryKey($table,$primaryKey='id'){
+		$this->primaryKeys[$table] = $primaryKey;
+	}
+	function getTableUniqTextKey($table){
+		return isset($this->uniqTextKeys[$table])?$this->uniqTextKeys[$table]:$this->uniqTextKey;
+	}
+	function getTablePrimaryKey($table){
+		return isset($this->primaryKeys[$table])?$this->primaryKeys[$table]:$this->primaryKey;
 	}
 	
 	function getUniqTextKeys(){
@@ -149,12 +163,12 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 	}
 	function offsetGet($k){
 		if(!isset($this->tableMap[$k]))
-			$this->tableMap[$k] = $this->loadTable($k,$this->primaryKey,$this->uniqTextKey);
+			$this->tableMap[$k] = $this->loadTable($k);
 		return $this->tableMap[$k];
 	}
 	function offsetSet($k,$v){
 		if(!is_object($v))
-			$v = $this->loadTable($v,$this->primaryKey,$this->uniqTextKey);
+			$v = $this->loadTable($v);
 		$this->tableMap[$k] = $v;
 	}
 	function offsetExists($k){
@@ -164,13 +178,9 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		if(isset($this->tableMap[$k]))
 			unset($this->tableMap[$k]);
 	}
-	function loadTable($k,$primaryKey,$uniqTextKey){
-		if(isset($this->primaryKeys[$k]))
-			$primaryKey = $this->primaryKeys[$k];
-		if(isset($this->uniqTextKeys[$k]))
-			$uniqTextKey = $this->uniqTextKeys[$k];
+	function loadTable($k){
 		$c = 'FoxORM\DataTable\\'.ucfirst($this->type);
-		return new $c($k,$primaryKey,$uniqTextKey,$this);
+		return new $c($k,$this);
 	}
 	function construct(array $config=[]){}
 	function readRow($type,$id,$primaryKey='id',$uniqTextKey='uniq'){

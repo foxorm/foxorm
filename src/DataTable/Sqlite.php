@@ -16,8 +16,8 @@ class Sqlite extends SQL{
 		$sufx = $this->dataSource->getFtsTableSuffix();
 		$ftsTable = $this->dataSource->escTable($this->name.$sufx);
 		$table = $this->dataSource->escTable($this->name);
-		$pk = $this->dataSource->esc($this->primaryKey);
-		$this->dataSource->makeFtsTable($this->name,$columns,$this->primaryKey,$this->uniqTextKey,$this->fullTextSearchLocale);
+		$pk = $this->dataSource->esc($this->getPrimaryKey());
+		$this->dataSource->makeFtsTable($this->name,$columns,$this->getPrimaryKey(),$this->getUniqTextKey(),$this->fullTextSearchLocale);
 		$this->select('snippet('.$ftsTable.',?,?,?,?,?) as _snippet',
 			[$start,$end,$sep,(int)$targetColumnIndex,(int)$tokensNumber]);
 		$this->select('docid as '.$pk);

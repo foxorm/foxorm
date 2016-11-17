@@ -6,8 +6,8 @@ class Filesystem extends DataTable{
 	private $patterns = [];
 	private $antiPatterns = [];
 	private $rewind;
-	function __construct($name,$primaryKey='id',$uniqTextKey='uniq',$dataSource){
-		parent::__construct($name,$primaryKey,$uniqTextKey,$dataSource);
+	function __construct($name,$dataSource){
+		parent::__construct($name,$dataSource);
 		$this->directoryIterator = new \DirectoryIterator($this->dataSource->getDirectory().'/'.$this->name);
 	}
 	function rewind(){
@@ -20,10 +20,10 @@ class Filesystem extends DataTable{
 		$iterator = $this->directoryIterator->current();
 		if($iterator){
 			$obj = $this->dataSource->entityFactory($this->name);
-			$obj->{$this->primaryKey} = $iterator->getFilename();
+			$obj->{$this->getPrimaryKey()} = $iterator->getFilename();
 			$obj->iterator = $iterator;
 			if($this->useCache)
-				$this->data[$obj->{$this->primaryKey}] = $obj;
+				$this->data[$obj->{$this->getPrimaryKey()}] = $obj;
 			return $obj;
 		}
 	}

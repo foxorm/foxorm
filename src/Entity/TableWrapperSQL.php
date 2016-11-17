@@ -5,7 +5,6 @@ use FoxORM\DataTable;
 class TableWrapperSQL extends TableWrapper{
 	protected $loadColumns = [];
 	protected $dontLoadColumns;
-	protected $uniqTextKey;
 	protected $uniqColumns = [];
 	function getLoadColumns(){
 		$loadColumns = $this->loadColumns;
@@ -35,9 +34,6 @@ class TableWrapperSQL extends TableWrapper{
 			$col = $this->formatColumnName($col);
 		}
 		return implode(',',$columns);
-	}
-	function getUniqTextKey(){
-		return $this->uniqTextKey;
 	}
 	function _onAddColumn($column){
 		foreach($this->uniqColumns as $uniq){
