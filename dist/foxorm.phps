@@ -225,6 +225,7 @@ class Bases implements \ArrayAccess{
 	private $modelClassPrefix;
 	private $entityClassDefault;
 	private $entityFactory;
+	private $tableWrapperFactory;
 	private $primaryKeyDefault;
 	private $uniqTextKeyDefault;
 	private $primaryKeys;
@@ -251,6 +252,9 @@ class Bases implements \ArrayAccess{
 	}
 	function setEntityFactory($factory){
 		$this->entityFactory = $factory;
+	}
+	function setTableWapperFactory($factory){
+		$this->tableWrapperFactory = $factory;
 	}
 	function setModelClassPrefix($modelClassPrefix='Model\\'){
 		$this->modelClassPrefix = (array)$modelClassPrefix;
@@ -365,6 +369,9 @@ class Bases implements \ArrayAccess{
 		$dataSource = new $class($this,$type,$modelClassPrefix,$entityClassDefault,$primaryKey,$uniqTextKey,$primaryKeys,$uniqTextKeys,$many2manyPrefix,$tableWrapperClassDefault,$debug,$config);
 		if($this->entityFactory){
 			$dataSource->setEntityFactory($this->entityFactory);
+		}
+		if($this->tableWrapperFactory){
+			$dataSource->setTableWapperFactory($this->tableWrapperFactory);
 		}
 		return $dataSource;
 	}
