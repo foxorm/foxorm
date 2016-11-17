@@ -434,6 +434,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 	function getType(){
 		return $this->type;
 	}
+	
 	function getUniqTextKey(){
 		return $this->uniqTextKey;
 	}
@@ -445,6 +446,19 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 	}
 	function setPrimaryKey($primaryKey='id'){
 		$this->primaryKey = $primaryKey;
+	}
+	
+	function setTableUniqTextKey($table,$uniqTextKey='uniq'){
+		$this->uniqTextKeys[$table] = $uniqTextKey;
+	}
+	function setTablePrimaryKey($table,$primaryKey='id'){
+		$this->primaryKeys[$table] = $primaryKey;
+	}
+	function getTableUniqTextKey($table){
+		return isset($this->uniqTextKeys[$table])?$this->uniqTextKeys[$table]:$this->uniqTextKey;
+	}
+	function getTablePrimaryKey($table){
+		return isset($this->primaryKeys[$table])?$this->primaryKeys[$table]:$this->primaryKey;
 	}
 	
 	function getUniqTextKeys(){
@@ -465,6 +479,17 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 	function setPrimaryKeys(array $primaryKeys=[]){
 		$this->primaryKeys = $primaryKeys;
 	}
+	
+	function isPrimaryKeyOf($col){
+		$x = explode('_',$col);
+		if($c<2) return;
+		$pk = array_pop($x);
+		$table = implode('_',$x);
+		if($pk==$this->getTablePrimaryKey($table)){
+			return $table;
+		}
+	}
+	
 	function findTableWrapperClass($name=null,$tableWrapper=null){
 		if($name){
 			$name = CaseConvert::ucw($name);
@@ -529,12 +554,12 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 	}
 	function offsetGet($k){
 		if(!isset($this->tableMap[$k]))
-			$this->tableMap[$k] = $this->loadTable($k,$this->primaryKey,$this->uniqTextKey);
+			$this->tableMap[$k] = $this->loadTable($k);
 		return $this->tableMap[$k];
 	}
 	function offsetSet($k,$v){
 		if(!is_object($v))
-			$v = $this->loadTable($v,$this->primaryKey,$this->uniqTextKey);
+			$v = $this->loadTable($v);
 		$this->tableMap[$k] = $v;
 	}
 	function offsetExists($k){
@@ -544,13 +569,9 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		if(isset($this->tableMap[$k]))
 			unset($this->tableMap[$k]);
 	}
-	function loadTable($k,$primaryKey,$uniqTextKey){
-		if(isset($this->primaryKeys[$k]))
-			$primaryKey = $this->primaryKeys[$k];
-		if(isset($this->uniqTextKeys[$k]))
-			$uniqTextKey = $this->uniqTextKeys[$k];
+	function loadTable($k){
 		$c = 'FoxORM\DataTable\\'.ucfirst($this->type);
-		return new $c($k,$primaryKey,$uniqTextKey,$this);
+		return new $c($k,$this);
 	}
 	function construct(array $config=[]){}
 	function readRow($type,$id,$primaryKey='id',$uniqTextKey='uniq'){
@@ -5633,8 +5654,6 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 	];
 	private $events = [];	
 	protected $name;
-	protected $primaryKey;
-	protected $uniqTextKey;
 	protected $dataSource;
 	protected $data = [];
 	protected $useCache = false;
@@ -5643,7 +5662,7 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 	protected $tableWrapper;
 	protected $isOptional = false;
 	
-	function __construct($name,$primaryKey='id',$uniqTextKey='uniq',$dataSource){
+	function __construct($name,$dataSource){
 		
 		if($p=strpos($name,':')){
 			$tableWrapper = substr($name,$p+1);
@@ -5654,35 +5673,26 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 		}
 		
 		$this->name = $name;
-		$this->primaryKey = $primaryKey;
-		$this->uniqTextKey = $uniqTextKey;
 		$this->dataSource = $dataSource;
 		$this->tableWrapper = $dataSource->tableWrapperFactory($name,$this,$tableWrapper);
-		
-		if($this->tableWrapper && method_exists($this->tableWrapper,'getUniqTextKey')){
-			$uniqTextKey = $this->tableWrapper->getUniqTextKey();
-			if($uniqTextKey){
-				$this->uniqTextKey = $uniqTextKey;
-			}
-		}
 		
 		foreach(self::$defaultEvents as $event)
 			$this->on($event);
 	}
 	function getPrimaryKey(){
-		return $this->primaryKey;
+		return $this->dataSource->getTablePrimaryKey($this->name);
 	}
 	function getUniqTextKey(){
-		return $this->uniqTextKey;
+		return $this->dataSource->getTableUniqTextKey($this->name);
 	}
 	function getDataSource(){
 		return $this->dataSource;
 	}
 	function setUniqTextKey($uniqTextKey='uniq'){
-		$this->uniqTextKey = $uniqTextKey;
+		$this->dataSource->setTableUniqTextKey($this->name,$uniqTextKey);
 	}
 	function setPrimaryKey($primaryKey='id'){
-		$this->primaryKey = $primaryKey;
+		$this->dataSource->setTablePrimaryKey($this->name,$primaryKey);
 	}
 	function offsetExists($id){
 		return (bool)$this->readId($id);
@@ -5706,7 +5716,7 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 		}
 		if(!$id){
 			$id = $this->putRow($obj);
-			$obj->{$this->primaryKey} = $id;
+			$obj->{$this->getPrimaryKey()} = $id;
 		}
 		elseif($obj===null){
 			return $this->offsetUnset($id);
@@ -5725,7 +5735,7 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 		if(Cast::isScalar($id)){
 			$id = Cast::scalar($id);
 		}
-		$offset = is_object($id)?$id->{$this->primaryKey}:$id;
+		$offset = is_object($id)?$id->{$this->getPrimaryKey()}:$id;
 		if(isset($this->data[$offset]))
 			unset($this->data[$offset]);
 		return $this->deleteRow($id);
@@ -5772,16 +5782,16 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 		$this->data = [];
 	}
 	function readId($id){
-		return $this->dataSource->readId($this->name,$id,$this->primaryKey,$this->uniqTextKey);
+		return $this->dataSource->readId($this->name,$id,$this->getPrimaryKey(),$this->getUniqTextKey());
 	}
 	function readRow($id){
-		return $this->dataSource->readRow($this->name,$id,$this->primaryKey,$this->uniqTextKey);
+		return $this->dataSource->readRow($this->name,$id,$this->getPrimaryKey(),$this->getUniqTextKey());
 	}
 	function putRow($obj,$id=null){
-		return $this->dataSource->putRow($this->name,$obj,$id,$this->primaryKey,$this->uniqTextKey);
+		return $this->dataSource->putRow($this->name,$obj,$id,$this->getPrimaryKey(),$this->getUniqTextKey());
 	}
 	function deleteRow($id){
-		return $this->dataSource->deleteRow($this->name,$id,$this->primaryKey,$this->uniqTextKey);
+		return $this->dataSource->deleteRow($this->name,$id,$this->getPrimaryKey(),$this->getUniqTextKey());
 	}
 	
 	function loadOne($obj){
@@ -6020,8 +6030,8 @@ class SQL extends DataTable{
 	protected $hasSelectRelational;
 	protected $tablePrefix;
 	protected $quoteCharacter;
-	function __construct($name,$primaryKey='id',$uniqTextKey='uniq', DataSourceSQL $dataSource){
-		parent::__construct($name,$primaryKey,$uniqTextKey,$dataSource);
+	function __construct($name,DataSourceSQL $dataSource){
+		parent::__construct($name,$dataSource);
 		$this->tablePrefix = $dataSource->getTablePrefix();
 		$this->quoteCharacter = $dataSource->getQuoteCharacter();
 		$this->select = $this->selectQuery();
@@ -6153,8 +6163,8 @@ class SQL extends DataTable{
 			$all = $this->dataSource->explodeAggTable($all);
 		foreach($all as $row){
 			$row = $this->dataSource->arrayToEntity($row,$this->name);
-			if(isset($row->{$this->primaryKey}))
-				$table[$row->{$this->primaryKey}] = $row;
+			if(isset($row->{$this->getPrimaryKey()}))
+				$table[$row->{$this->getPrimaryKey()}] = $row;
 			else
 				$table[] = $row;
 		}
@@ -6179,7 +6189,7 @@ class SQL extends DataTable{
 	}
 	function key(){
 		if($this->row)
-			return $this->row->{$this->primaryKey};
+			return $this->row->{$this->getPrimaryKey()};
 	}
 	function valid(){
 		return (bool)$this->row;
@@ -6201,7 +6211,7 @@ class SQL extends DataTable{
 				$this->row->$k = $v;
 			}
 			if($this->useCache){
-				$pk = isset($this->row->{$this->primaryKey})?$this->row->{$this->primaryKey}:count($this->data)+1;
+				$pk = isset($this->row->{$this->getPrimaryKey()})?$this->row->{$this->getPrimaryKey()}:count($this->data)+1;
 				$this->data[$pk] = $this->row;
 			}
 		}
@@ -6238,7 +6248,7 @@ class SQL extends DataTable{
 			->getClone()
 			->unOrderBy()
 			->unSelect()
-			->select($this->primaryKey)
+			->select($this->getPrimaryKey())
 		;
 		$select
 			->select('COUNT(*)')
@@ -6947,7 +6957,7 @@ class Mysql extends SQL{
 	}
 	function fullTextSearchInnoDB($text,$mode='',&$columns=[]){
 		$table = $this->dataSource->escTable($this->name);
-		$this->dataSource->addFtsIndex($this->name,$columns,$this->primaryKey,$this->uniqTextKey);
+		$this->dataSource->addFtsIndex($this->name,$columns,$this->getPrimaryKey(),$this->getUniqTextKey());
 		$cols = '`'.implode('`,`',$columns).'`';
 		$this->where('MATCH('.$cols.') AGAINST (? '.$mode.')',[$text]);
 		$this->select('MATCH('.$cols.') AGAINST (? '.$mode.') AS _rank',[$text]);
@@ -6960,9 +6970,9 @@ class Mysql extends SQL{
 	function fullTextSearchMyISAM($text,$mode='',&$columns=[]){
 		$table = $this->dataSource->escTable($this->name);
 		$ftsTable = $this->dataSource->escTable($this->name.$this->dataSource->getFtsTableSuffix());
-		$this->dataSource->makeFtsTableAndIndex($this->name,$columns,$this->primaryKey,$this->uniqTextKey);
+		$this->dataSource->makeFtsTableAndIndex($this->name,$columns,$this->getPrimaryKey(),$this->getUniqTextKey());
 		$cols = '`'.implode('`,`',$columns).'`';
-		$pk = $this->dataSource->esc($this->primaryKey);
+		$pk = $this->dataSource->esc($this->getPrimaryKey());
 		$this->select($table.'.*');
 		$this->unFrom($table);
 		$limit = $this->getLimit();
@@ -7023,7 +7033,7 @@ class Pgsql extends SQL{
 	}
 
 	function fullTextSearch($text,$columns=[],$alias=null,$toVector=null){
-		$indexName = $this->dataSource->addFtsColumn($this->name,$columns,$this->primaryKey,$this->uniqTextKey,$this->fullTextSearchLang);
+		$indexName = $this->dataSource->addFtsColumn($this->name,$columns,$this->getPrimaryKey(),$this->getUniqTextKey(),$this->fullTextSearchLang);
 		$lang = $this->fullTextSearchLang?"'".$this->fullTextSearchLang."',":'';
 		$c = $this->select->formatColumnName($indexName);
 		if(!$alias) $alias = $indexName.'_rank';
@@ -7078,8 +7088,8 @@ class Sqlite extends SQL{
 		$sufx = $this->dataSource->getFtsTableSuffix();
 		$ftsTable = $this->dataSource->escTable($this->name.$sufx);
 		$table = $this->dataSource->escTable($this->name);
-		$pk = $this->dataSource->esc($this->primaryKey);
-		$this->dataSource->makeFtsTable($this->name,$columns,$this->primaryKey,$this->uniqTextKey,$this->fullTextSearchLocale);
+		$pk = $this->dataSource->esc($this->getPrimaryKey());
+		$this->dataSource->makeFtsTable($this->name,$columns,$this->getPrimaryKey(),$this->getUniqTextKey(),$this->fullTextSearchLocale);
 		$this->select('snippet('.$ftsTable.',?,?,?,?,?) as _snippet',
 			[$start,$end,$sep,(int)$targetColumnIndex,(int)$tokensNumber]);
 		$this->select('docid as '.$pk);
@@ -7118,8 +7128,8 @@ class Filesystem extends DataTable{
 	private $patterns = [];
 	private $antiPatterns = [];
 	private $rewind;
-	function __construct($name,$primaryKey='id',$uniqTextKey='uniq',$dataSource){
-		parent::__construct($name,$primaryKey,$uniqTextKey,$dataSource);
+	function __construct($name,$dataSource){
+		parent::__construct($name,$dataSource);
 		$this->directoryIterator = new \DirectoryIterator($this->dataSource->getDirectory().'/'.$this->name);
 	}
 	function rewind(){
@@ -7132,10 +7142,10 @@ class Filesystem extends DataTable{
 		$iterator = $this->directoryIterator->current();
 		if($iterator){
 			$obj = $this->dataSource->entityFactory($this->name);
-			$obj->{$this->primaryKey} = $iterator->getFilename();
+			$obj->{$this->getPrimaryKey()} = $iterator->getFilename();
 			$obj->iterator = $iterator;
 			if($this->useCache)
-				$this->data[$obj->{$this->primaryKey}] = $obj;
+				$this->data[$obj->{$this->getPrimaryKey()}] = $obj;
 			return $obj;
 		}
 	}
@@ -7223,10 +7233,14 @@ class TableWrapper implements \ArrayAccess,\Iterator,\Countable,\JsonSerializabl
 	protected $type;
 	protected $db;
 	protected $dataTable;
+	protected $uniqTextKey;
 	function __construct($type, DataSource $db=null, DataTable $table=null){
 		$this->type = $type;
 		$this->db = $db;
 		$this->dataTable = $table;
+		if(isset($this->uniqTextKey)){
+			$this->setUniqTextKey($this->uniqTextKey);
+		}
 	}
 	function __call($f,$args){
 		if(method_exists($this->dataTable,$f)){
@@ -7280,7 +7294,6 @@ use FoxORM\DataTable;
 class TableWrapperSQL extends TableWrapper{
 	protected $loadColumns = [];
 	protected $dontLoadColumns;
-	protected $uniqTextKey;
 	protected $uniqColumns = [];
 	function getLoadColumns(){
 		$loadColumns = $this->loadColumns;
@@ -7310,9 +7323,6 @@ class TableWrapperSQL extends TableWrapper{
 			$col = $this->formatColumnName($col);
 		}
 		return implode(',',$columns);
-	}
-	function getUniqTextKey(){
-		return $this->uniqTextKey;
 	}
 	function _onAddColumn($column){
 		foreach($this->uniqColumns as $uniq){
