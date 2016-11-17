@@ -131,4 +131,10 @@ class ArrayIterator implements ArrayAccess,Iterator,JsonSerializable,Countable{
 		$this->__readingState = (bool)$b;
 	}
 	
+	function __call($f,$args){
+		if(is_object($this->data)){
+			return call_user_func_array([$this->data,$f],$args);
+		}
+		throw new \BadMethodCallException('Call to undefined method '.get_class($this).'->'.$f);
+	}
 }
