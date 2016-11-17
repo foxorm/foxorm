@@ -7,6 +7,7 @@ use JsonSerializable;
 use Countable;
 use stdClass;
 class ArrayIterator implements ArrayAccess,Iterator,JsonSerializable,Countable{
+	
 	protected $data = [];
 	function __construct($data=[]){
 		$this->data = $data;
@@ -23,21 +24,45 @@ class ArrayIterator implements ArrayAccess,Iterator,JsonSerializable,Countable{
 	function __unset($k){
 		unset($this->data[$k]);
 	}
-	
 	function rewind(){
-		reset($this->data);
+		if($this->data instanceof Iterator){
+			$this->data->rewind();
+		}
+		else{
+			reset($this->data);
+		}
 	}
 	function current(){
-		return current($this->data);
+		if($this->data instanceof Iterator){
+			return $this->data->current();
+		}
+		else{
+			return current($this->data);
+		}
 	}
 	function key(){
-		return key($this->data);
+		if($this->data instanceof Iterator){
+			return $this->data->key();
+		}
+		else{
+			return key($this->data);
+		}
 	}
 	function next(){
-		return next($this->data);
+		if($this->data instanceof Iterator){
+			return $this->data->next();
+		}
+		else{
+			return next($this->data);
+		}
 	}
 	function valid(){
-		return key($this->data)!==null;
+		if($this->data instanceof Iterator){
+			return $this->data->valid();
+		}
+		else{
+			return key($this->data)!==null;
+		}
 	}
 	function count(){
 		return count($this->data);
@@ -94,4 +119,5 @@ class ArrayIterator implements ArrayAccess,Iterator,JsonSerializable,Countable{
 			$this->data[$k] = clone $o;
 		}
 	}
+	
 }
