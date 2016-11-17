@@ -237,16 +237,20 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 	}
 	
 	function one($one){
-		return $this->db->many2one($this,$one);
+		//return $this->db->many2one($this,$one);
+		return $this->db[$one]->one($this);
 	}
 	function many($many){
-		return $this->db->one2many($this,$many);
+		//return $this->db->one2many($this,$many);
+		return $this->db[$many]->many($this);
 	}
 	function many2many($many,$via=null){
-		return $this->db->many2many($this,$many,$via);
+		//return $this->db->many2many($this,$many,$via);
+		return $this->db[$many]->many2many($this,$via);
 	}
 	function many2manyLink($many,$via=null){
-		return $this->db->many2manyLink($this,$many,$via);
+		//return $this->db->many2manyLink($this,$many,$via);
+		return $this->db[$many]->many2manyLink($this,$via);
 	}
 	
 	function store(){
