@@ -99,6 +99,17 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 	function setPrimaryKeys(array $primaryKeys=[]){
 		$this->primaryKeys = $primaryKeys;
 	}
+	
+	function isPrimaryKeyOf($col){
+		$x = explode('_',$col);
+		if($c<2) return;
+		$pk = array_pop($x);
+		$table = implode('_',$x);
+		if($pk==$this->getTablePrimaryKey($table)){
+			return $table;
+		}
+	}
+	
 	function findTableWrapperClass($name=null,$tableWrapper=null){
 		if($name){
 			$name = CaseConvert::ucw($name);
