@@ -186,13 +186,19 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 		return $this->dataSource->many2one($obj,$this->name);
 	}
 	function many($obj){
-		return $this->dataSource->one2many($obj,$this->name);
+		$many = $this->dataSource->one2many($obj,$this->name);
+		$many = new ArrayIterator($many);
+		return $many;
 	}
 	function many2many($obj,$via=null){
-		return $this->dataSource->many2many($obj,$this->name,$via);
+		$many = $this->dataSource->many2many($obj,$this->name,$via);
+		$many = new ArrayIterator($many);
+		return $many;
 	}
 	function many2manyLink($obj,$via=null,$viaFk=null){
-		return $this->dataSource->many2manyLink($obj,$this->name,$via,$viaFk);
+		$many = $this->dataSource->many2manyLink($obj,$this->name,$via,$viaFk);
+		$many = new ArrayIterator($many);
+		return $many;
 	}
 	
 	abstract function getAll();
