@@ -66,10 +66,6 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 			$this->__data[$k2] = $v2;
 			$this->__cursor[$k2] = &$this->__data[$k2];
 		}
-		else if(substr($k,0,9)==='_one2one_'){
-			$k2 = '_one_'.substr($k,9);
-			$this->__set($k2,$v);
-		}
 		$this->__cursor[$k] = &$this->__data[$k];
 		$this->__data[$k] = $v;
 	}

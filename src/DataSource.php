@@ -299,10 +299,6 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 					$k = substr($k,5);
 					$relation = 'one';
 				}
-				else if(substr($k,1,8)=='one2one_'){
-					$k = substr($k,9);
-					$relation = 'one2one';
-				}
 				elseif(substr($k,1,5)=='many_'){
 					$k = substr($k,6);
 					$relation = 'many';
@@ -331,7 +327,6 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 			if($relation){
 				switch($relation){
 					case 'one':
-					case 'one2one':
 						if(is_scalar($v))
 							$v = $this->scalarToArray($v,$k);
 						if(is_array($v))
@@ -339,18 +334,6 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 						
 						//$t = $this->findEntityTable($v,$k);
 						$t = $k?$k:$this->findEntityTable($v);
-						
-						$oneProp = '_one_'.$t;
-						if($relation=='one2one'){
-							$v->{'_one_'.$type} = $obj;
-							$obj->$oneProp = $v;
-						}
-						else{
-							$one2oneProp = '_one2one_'.$t;
-							if(isset($obj->$oneProp)&&isset($obj->$one2oneProp)&&$obj->$oneProp===$obj->$one2oneProp){
-								continue 2;
-							}
-						}
 						
 						$pk = $this[$t]->getPrimaryKey();
 						if(!is_null($v)){
@@ -688,7 +671,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		
 		if($recursive){
 			foreach($row as $k=>$v){
-				if(substr($k,0,1)=='_'&&!in_array(current(explode('_',$k)),['one','one2one','many','many2many']))
+				if(substr($k,0,1)=='_'&&!in_array(current(explode('_',$k)),['one','many','many2many']))
 					continue;
 				if(is_array($v)){
 					foreach($v as $val){
