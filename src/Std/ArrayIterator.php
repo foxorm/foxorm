@@ -7,6 +7,8 @@ use JsonSerializable;
 use Countable;
 use stdClass;
 class ArrayIterator implements ArrayAccess,Iterator,JsonSerializable,Countable{
+	private $__readingState;
+	private $__modified = false;
 	
 	protected $data = [];
 	function __construct($data=[]){
@@ -69,6 +71,7 @@ class ArrayIterator implements ArrayAccess,Iterator,JsonSerializable,Countable{
 	}
 	
 	function offsetSet($k,$v){
+		if(!$this->__readingState) $this->__modified = true;
 		$this->__set($k,$v);
 	}
 	function &offsetGet($k){
@@ -78,6 +81,7 @@ class ArrayIterator implements ArrayAccess,Iterator,JsonSerializable,Countable{
 		return isset($this->data[$k]);
 	}
 	function offsetUnset($k){
+		if(!$this->__readingState) $this->__modified = true;
 		unset($this->data[$k]);
 	}
 	
@@ -118,6 +122,13 @@ class ArrayIterator implements ArrayAccess,Iterator,JsonSerializable,Countable{
 		foreach($this->data as $k=>$o){
 			$this->data[$k] = clone $o;
 		}
+	}
+	
+	function __modified(){
+		return $this->__modified;
+	}
+	function __readingState($b){
+		$this->__readingState = (bool)$b;
 	}
 	
 }
