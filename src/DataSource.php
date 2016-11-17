@@ -299,7 +299,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 					$k = substr($k,5);
 					$relation = 'one';
 				}
-				if(substr($k,1,8)=='one2one_'){
+				else if(substr($k,1,8)=='one2one_'){
 					$k = substr($k,9);
 					$relation = 'one2one';
 				}
@@ -327,6 +327,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 			elseif(is_array($v)||($v instanceof ArrayIterator)){
 				$relation = 'many';
 			}
+			
 			if($relation){
 				switch($relation){
 					case 'one':
