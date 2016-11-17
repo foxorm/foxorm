@@ -1,1 +1,1 @@
-/dist/foxorm.php -diff
+/dist/foxorm.php -text -diff
