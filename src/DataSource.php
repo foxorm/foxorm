@@ -337,9 +337,20 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 			elseif(is_object($v)){
 				$relation = 'one';
 			}
+			elseif($t = $this->isPrimaryKeyOf($k)){
+				$relation = 'oneByPK';
+			}
 			
 			if($relation){
 				switch($relation){
+					case 'oneByPK':
+						$pk = $this[$t]->getPrimaryKey();
+						$rc = $t.'_'.$pk;
+						$addFK = [$type,$t,$rc,$pk,$xclusive];
+						if(!in_array($addFK,$fk))
+							$fk[] = $addFK;
+						$properties[$k] = $v;
+					break;
 					case 'one':
 						if(is_scalar($v))
 							$v = $this->scalarToArray($v,$k);
