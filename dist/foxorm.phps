@@ -553,15 +553,6 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 	
 	function putRow($type,$obj,$id=null,$primaryKey='id',$uniqTextKey='uniq'){
 		
-		if($obj->_type&&$obj->_type!=$type){ //keep track and make easy for copy from one table to another
-			$pkFrom = $this[$obj->_type]->getPrimaryKey();
-			if(isset($obj->$pkFrom)){
-				$relFrom = '_one_'.$obj->_type;
-				$obj->$relFrom = $obj->$pkFrom;
-				unset($obj->$pkFrom);
-			}
-		}
-		
 		$obj->_type = $type;
 		$properties = [];
 		$oneNew = [];
@@ -756,6 +747,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		foreach($refsOne as $rc=>$rf){
 			$obj->$rc = $properties[$rc] = $rf;
 		}
+		
 		
 		if(!$update||!isset($obj->_modified)||$obj->_modified!==false){
 			$modified = true;
