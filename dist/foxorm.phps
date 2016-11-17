@@ -79,6 +79,9 @@ use JsonSerializable;
 use Countable;
 use stdClass;
 class ArrayIterator implements ArrayAccess,Iterator,JsonSerializable,Countable{
+	private $__readingState;
+	private $__modified = false;
+	
 	protected $data = [];
 	function __construct($data=[]){
 		$this->data = $data;
@@ -95,27 +98,52 @@ class ArrayIterator implements ArrayAccess,Iterator,JsonSerializable,Countable{
 	function __unset($k){
 		unset($this->data[$k]);
 	}
-	
 	function rewind(){
-		reset($this->data);
+		if($this->data instanceof Iterator){
+			$this->data->rewind();
+		}
+		else{
+			reset($this->data);
+		}
 	}
 	function current(){
-		return current($this->data);
+		if($this->data instanceof Iterator){
+			return $this->data->current();
+		}
+		else{
+			return current($this->data);
+		}
 	}
 	function key(){
-		return key($this->data);
+		if($this->data instanceof Iterator){
+			return $this->data->key();
+		}
+		else{
+			return key($this->data);
+		}
 	}
 	function next(){
-		return next($this->data);
+		if($this->data instanceof Iterator){
+			return $this->data->next();
+		}
+		else{
+			return next($this->data);
+		}
 	}
 	function valid(){
-		return key($this->data)!==null;
+		if($this->data instanceof Iterator){
+			return $this->data->valid();
+		}
+		else{
+			return key($this->data)!==null;
+		}
 	}
 	function count(){
 		return count($this->data);
 	}
 	
 	function offsetSet($k,$v){
+		if(!$this->__readingState) $this->__modified = true;
 		$this->__set($k,$v);
 	}
 	function &offsetGet($k){
@@ -125,6 +153,7 @@ class ArrayIterator implements ArrayAccess,Iterator,JsonSerializable,Countable{
 		return isset($this->data[$k]);
 	}
 	function offsetUnset($k){
+		if(!$this->__readingState) $this->__modified = true;
 		unset($this->data[$k]);
 	}
 	
@@ -165,6 +194,20 @@ class ArrayIterator implements ArrayAccess,Iterator,JsonSerializable,Countable{
 		foreach($this->data as $k=>$o){
 			$this->data[$k] = clone $o;
 		}
+	}
+	
+	function __modified(){
+		return $this->__modified;
+	}
+	function __readingState($b){
+		$this->__readingState = (bool)$b;
+	}
+	
+	function __call($f,$args){
+		if(is_object($this->data)){
+			return call_user_func_array([$this->data,$f],$args);
+		}
+		throw new \BadMethodCallException('Call to undefined method '.get_class($this).'->'.$f);
 	}
 }
 }
@@ -565,6 +608,8 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		$fk = [];
 		$refsOne = [];
 		
+		$manyIteratorByK = [];
+		
 		if(isset($id)){
 			if($obj instanceof StateFollower) $obj->__readingState(true);
 			if($uniqTextKey&&!Cast::isInt($id))
@@ -674,6 +719,10 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 						$obj->$key = $v;
 					break;
 					case 'many':
+						if(!($v instanceof ArrayIterator)){
+							$v = new ArrayIterator($v);
+						}
+						$v->__readingState(true);
 						foreach($v as $mk=>$val){
 							if(is_scalar($val))
 								$v[$mk] = $val = $this->scalarToArray($val,$k);
@@ -688,10 +737,16 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 							$addFK = [$t,$type,$rc,$primaryKey,$xclusive];
 							if(!in_array($addFK,$fk))
 								$fk[] = $addFK;
+							
+							$manyIteratorByK[$t] = $v;
 						}
+						$v->__readingState(false);
 						$obj->$key = $v;
 					break;
 					case 'many2many':
+						if(!($v instanceof ArrayIterator)){
+							$obj->$key = $v = new ArrayIterator($v);
+						}
 						if(false!==$i=strpos($k,':')){ //via
 							$inter = substr($k,$i+1);
 							$k = substr($k,0,$i);
@@ -702,6 +757,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 						$typeColSuffix = $type==$k?'2':'';
 						$rc = $type.'_'.$primaryKey;
 						$obj->{'_linkMany_'.$inter} = [];
+						$v->__readingState(true);
 						foreach($v as $kM2m=>$val){
 							if(is_scalar($val))
 								$v[$kM2m] = $val = $this->scalarToArray($val,$k);
@@ -721,7 +777,10 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 								$fk[] = $addFK;
 							$val->{'_linkOne_'.$inter} = $interm;
 							$obj->{'_linkMany_'.$inter}[] = $interm;
+							
+							$manyIteratorByK[$t] = $v;
 						}
+						$v->__readingState(false);
 						$addFK = [$inter,$type,$rc,$primaryKey,$xclusive];
 						if(!in_array($addFK,$fk))
 							$fk[] = $addFK;
@@ -787,7 +846,9 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 						$except[] = $val->$pk;
 						
 				}
-				$this->one2manyDeleteAll($obj,$k,$except);
+				if($manyIteratorByK[$k]->__modified()){
+					$this->one2manyDeleteAll($obj,$k,$except);
+				}
 			}
 			foreach($v as list($val,$rc)){
 				$val->$rc =  $obj->$primaryKey;
@@ -800,6 +861,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 			}
 		}
 		foreach($many2manyNew as $t=>$v){
+			$modified = $manyIteratorByK[$t]->__modified();
 			foreach($v as $k=>$viaLoop){
 				foreach($viaLoop as $via=>$val){
 					if($update){
@@ -813,7 +875,9 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 								$except[] = $id;
 							}
 						}
-						$this->many2manyDeleteAll($obj,$t,$via,$except,$viaFk);
+						if($modified){
+							$this->many2manyDeleteAll($obj,$t,$via,$except,$viaFk);
+						}
 					}
 					foreach($val as list($interm,$rc,$rc2,$vpk)){
 						$interm->$rc = $obj->$primaryKey;
@@ -5726,13 +5790,19 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 		return $this->dataSource->many2one($obj,$this->name);
 	}
 	function many($obj){
-		return $this->dataSource->one2many($obj,$this->name);
+		$many = $this->dataSource->one2many($obj,$this->name);
+		$many = new ArrayIterator($many);
+		return $many;
 	}
 	function many2many($obj,$via=null){
-		return $this->dataSource->many2many($obj,$this->name,$via);
+		$many = $this->dataSource->many2many($obj,$this->name,$via);
+		$many = new ArrayIterator($many);
+		return $many;
 	}
 	function many2manyLink($obj,$via=null,$viaFk=null){
-		return $this->dataSource->many2manyLink($obj,$this->name,$via,$viaFk);
+		$many = $this->dataSource->many2manyLink($obj,$this->name,$via,$viaFk);
+		$many = new ArrayIterator($many);
+		return $many;
 	}
 	
 	abstract function getAll();
@@ -7547,16 +7617,20 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 	}
 	
 	function one($one){
-		return $this->db->many2one($this,$one);
+		//return $this->db->many2one($this,$one);
+		return $this->db[$one]->one($this);
 	}
 	function many($many){
-		return $this->db->one2many($this,$many);
+		//return $this->db->one2many($this,$many);
+		return $this->db[$many]->many($this);
 	}
 	function many2many($many,$via=null){
-		return $this->db->many2many($this,$many,$via);
+		//return $this->db->many2many($this,$many,$via);
+		return $this->db[$many]->many2many($this,$via);
 	}
 	function many2manyLink($many,$via=null){
-		return $this->db->many2manyLink($this,$many,$via);
+		//return $this->db->many2manyLink($this,$many,$via);
+		return $this->db[$many]->many2manyLink($this,$via);
 	}
 	
 	function store(){
