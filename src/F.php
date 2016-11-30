@@ -8,7 +8,7 @@ class F{
 	static function _init(){
 		if(!isset(self::$bases)){
 			if(class_exists(Di::class)&&self::$useStrategyDi){
-				self::$bases = Di::getInstance()->create(Bases::class);
+				self::$bases = Di::getInstance()->get(Bases::class);
 				if(isset(self::$bases[0]))
 					self::selectDatabase(0);
 			}
