@@ -7468,6 +7468,17 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 				$v = is_object($v)?$v->$pk:$v[$pk];
 			}
 		}
+		elseif($pkOf=$this->db->isPrimaryKeyOf($k)){
+			$k1 = '_one_'.$pkOf;
+			$k2 = '_one_'.$pkOf.'_x_';
+			$pk = $this->db[$pkOf]->getPrimaryKey();
+			if(array_key_exists($k1,$this->__data)){
+				$this->__data[$k1] = $v;
+			}
+			if(array_key_exists($k2,$this->__data)){
+				$this->__data[$k2] = $v;
+			}
+		}
 		$this->__cursor[$k] = &$this->__data[$k];
 		$this->__data[$k] = $v;
 	}
@@ -7480,7 +7491,18 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 					$relationKey = substr($relationKey,0,-3);
 				if(substr($k,0,5)==='_one_'){
 					$relationKey = substr($relationKey,5);
-					$this->__data[$k] = $this->one($relationKey);
+					
+					
+					$relationTable = $this->db[$relationKey];
+					$relationFk = $relationKey.'_'.$relationTable->getPrimaryKey();
+					if(isset($this->data[$relationFk])&&$this->data[$relationFk]){
+						$relationId = $this->data[$relationFk];
+						$this->__data[$k] = $relationTable[$relationId];
+					}
+					else{
+						$this->__data[$k] = $this->one($relationKey);
+					}
+					
 					$this->__cursor[$k] = &$this->__data[$k];
 				}
 				elseif(substr($k,0,6)==='_many_'){
@@ -7497,6 +7519,20 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 					$relationKey = substr($relationKey,15);
 					$this->__data[$k] = $this->many2many($relationKey);
 					$this->__cursor[$k] = &$this->__data[$k];
+				}
+				elseif($pkOf=$this->db->isPrimaryKeyOf($k)){
+					$k1 = '_one_'.$pkOf;
+					$k2 = '_one_'.$pkOf.'_x_';
+					$pk = $this->db[$pkOf]->getPrimaryKey();
+					if(array_key_exists($k1,$this->__data)){
+						$this->__data[$k] = $this->__data[$k1]->$pk;
+					}
+					elseif(array_key_exists($k2,$this->__data)){
+						$this->__data[$k] = $this->__data[$k2]->$pk;
+					}
+					else{
+						$this->__data[$k] = $this->getValueOf($k);
+					}
 				}
 				else{
 					$this->__data[$k] = $this->getValueOf($k);
