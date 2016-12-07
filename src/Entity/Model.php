@@ -124,7 +124,7 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 				elseif(substr($k,0,15)==='_many2manyLink_'){
 					$relationKey = substr($relationKey,15);
 					if($this->getId()){
-						$this->__data[$k] = $this->many2many($relationKey);
+						$this->__data[$k] = $this->many2manyLink($relationKey);
 					}
 					else{
 						$this->__data[$k] = [];
