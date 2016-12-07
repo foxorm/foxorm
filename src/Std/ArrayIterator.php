@@ -11,10 +11,18 @@ class ArrayIterator implements ArrayAccess,Iterator,JsonSerializable,Countable{
 	private $__modified = false;
 	
 	protected $data = [];
-	function __construct($data=[]){
+	protected $parent = [];
+	function __construct($data=[],$parent=null){
 		$this->data = $data;
+		$this->parent = $parent;
 	}
 	function __set($k,$v){
+		if($this->parent){
+			$pk = $this->data->getPrimaryKey();
+			if(!isset($this->parent->$pk)){
+				return;
+			}
+		}
 		$this->data[$k] = $v;
 	}
 	function &__get($k){

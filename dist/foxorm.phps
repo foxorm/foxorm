@@ -83,10 +83,18 @@ class ArrayIterator implements ArrayAccess,Iterator,JsonSerializable,Countable{
 	private $__modified = false;
 	
 	protected $data = [];
-	function __construct($data=[]){
+	protected $parent = [];
+	function __construct($data=[],$parent=null){
 		$this->data = $data;
+		$this->parent = $parent;
 	}
 	function __set($k,$v){
+		if($this->parent){
+			$pk = $this->data->getPrimaryKey();
+			if(!isset($this->parent->$pk)){
+				return;
+			}
+		}
 		$this->data[$k] = $v;
 	}
 	function &__get($k){
@@ -758,7 +766,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 					break;
 					case 'many':
 						if(!($v instanceof ArrayIterator)){
-							$v = new ArrayIterator($v);
+							$v = new ArrayIterator($v,$obj);
 						}
 						$v->__readingState(true);
 						foreach($v as $mk=>$val){
@@ -782,7 +790,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 					break;
 					case 'many2many':
 						if(!($v instanceof ArrayIterator)){
-							$obj->$key = $v = new ArrayIterator($v);
+							$obj->$key = $v = new ArrayIterator($v,$obj);
 						}
 						if(false!==$i=strpos($k,':')){ //via
 							$inter = substr($k,$i+1);
@@ -5815,17 +5823,17 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 	}
 	function many($obj){
 		$many = $this->dataSource->one2many($obj,$this->name);
-		$many = new ArrayIterator($many);
+		$many = new ArrayIterator($many,$obj);
 		return $many;
 	}
 	function many2many($obj,$via=null){
 		$many = $this->dataSource->many2many($obj,$this->name,$via);
-		$many = new ArrayIterator($many);
+		$many = new ArrayIterator($many,$obj);
 		return $many;
 	}
 	function many2manyLink($obj,$via=null,$viaFk=null){
 		$many = $this->dataSource->many2manyLink($obj,$this->name,$via,$viaFk);
-		$many = new ArrayIterator($many);
+		$many = new ArrayIterator($many,$obj);
 		return $many;
 	}
 	
