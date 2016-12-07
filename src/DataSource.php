@@ -378,7 +378,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 					break;
 					case 'many':
 						if(!($v instanceof ArrayIterator)){
-							$v = new ArrayIterator($v,$obj);
+							$v = new ArrayIterator($v);
 						}
 						$v->__readingState(true);
 						foreach($v as $mk=>$val){
@@ -402,7 +402,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 					break;
 					case 'many2many':
 						if(!($v instanceof ArrayIterator)){
-							$obj->$key = $v = new ArrayIterator($v,$obj);
+							$obj->$key = $v = new ArrayIterator($v);
 						}
 						if(false!==$i=strpos($k,':')){ //via
 							$inter = substr($k,$i+1);

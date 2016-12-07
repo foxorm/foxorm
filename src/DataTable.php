@@ -176,17 +176,17 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 	}
 	function many($obj){
 		$many = $this->dataSource->one2many($obj,$this->name);
-		$many = new ArrayIterator($many,$obj);
+		$many = new ArrayIterator($many);
 		return $many;
 	}
 	function many2many($obj,$via=null){
 		$many = $this->dataSource->many2many($obj,$this->name,$via);
-		$many = new ArrayIterator($many,$obj);
+		$many = new ArrayIterator($many);
 		return $many;
 	}
 	function many2manyLink($obj,$via=null,$viaFk=null){
 		$many = $this->dataSource->many2manyLink($obj,$this->name,$via,$viaFk);
-		$many = new ArrayIterator($many,$obj);
+		$many = new ArrayIterator($many);
 		return $many;
 	}
 	
