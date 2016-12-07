@@ -385,4 +385,8 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 			$this->db->triggerExec($this->__events[$event], $this->_type, $event, $this, $recursive, $flow);
 		return $this;
 	}
+	function getId(){
+		$pk = $this->_table->getPrimaryKey();
+		return isset($this->__data[$pk])?$this->__data[$pk]:null;
+	}
 }
