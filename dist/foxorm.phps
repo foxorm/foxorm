@@ -83,18 +83,10 @@ class ArrayIterator implements ArrayAccess,Iterator,JsonSerializable,Countable{
 	private $__modified = false;
 	
 	protected $data = [];
-	protected $parent = [];
-	function __construct($data=[],$parent=null){
+	function __construct($data=[]){
 		$this->data = $data;
-		$this->parent = $parent;
 	}
 	function __set($k,$v){
-		if($this->parent){
-			$pk = $this->data->getPrimaryKey();
-			if(!isset($this->parent->$pk)){
-				return;
-			}
-		}
 		$this->data[$k] = $v;
 	}
 	function &__get($k){
@@ -766,7 +758,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 					break;
 					case 'many':
 						if(!($v instanceof ArrayIterator)){
-							$v = new ArrayIterator($v,$obj);
+							$v = new ArrayIterator($v);
 						}
 						$v->__readingState(true);
 						foreach($v as $mk=>$val){
@@ -790,7 +782,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 					break;
 					case 'many2many':
 						if(!($v instanceof ArrayIterator)){
-							$obj->$key = $v = new ArrayIterator($v,$obj);
+							$obj->$key = $v = new ArrayIterator($v);
 						}
 						if(false!==$i=strpos($k,':')){ //via
 							$inter = substr($k,$i+1);
@@ -5823,17 +5815,17 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 	}
 	function many($obj){
 		$many = $this->dataSource->one2many($obj,$this->name);
-		$many = new ArrayIterator($many,$obj);
+		$many = new ArrayIterator($many);
 		return $many;
 	}
 	function many2many($obj,$via=null){
 		$many = $this->dataSource->many2many($obj,$this->name,$via);
-		$many = new ArrayIterator($many,$obj);
+		$many = new ArrayIterator($many);
 		return $many;
 	}
 	function many2manyLink($obj,$via=null,$viaFk=null){
 		$many = $this->dataSource->many2manyLink($obj,$this->name,$via,$viaFk);
-		$many = new ArrayIterator($many,$obj);
+		$many = new ArrayIterator($many);
 		return $many;
 	}
 	
@@ -7515,17 +7507,32 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 				}
 				elseif(substr($k,0,6)==='_many_'){
 					$relationKey = substr($relationKey,6);
-					$this->__data[$k] = $this->many($relationKey);
+					if($this->getId()){
+						$this->__data[$k] = $this->many($relationKey);
+					}
+					else{
+						$this->__data[$k] = [];
+					}
 					$this->__cursor[$k] = &$this->__data[$k];
 				}
 				elseif(substr($k,0,11)==='_many2many_'){
 					$relationKey = substr($relationKey,11);
-					$this->__data[$k] = $this->many2many($relationKey);
+					if($this->getId()){
+						$this->__data[$k] = $this->many2many($relationKey);
+					}
+					else{
+						$this->__data[$k] = [];
+					}
 					$this->__cursor[$k] = &$this->__data[$k];
 				}
 				elseif(substr($k,0,15)==='_many2manyLink_'){
 					$relationKey = substr($relationKey,15);
-					$this->__data[$k] = $this->many2many($relationKey);
+					if($this->getId()){
+						$this->__data[$k] = $this->many2manyLink($relationKey);
+					}
+					else{
+						$this->__data[$k] = [];
+					}
 					$this->__cursor[$k] = &$this->__data[$k];
 				}
 				elseif($pkOf=$this->db->isPrimaryKeyOf($k)){
@@ -7796,6 +7803,10 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 		if(isset($this->__events[$event]))
 			$this->db->triggerExec($this->__events[$event], $this->_type, $event, $this, $recursive, $flow);
 		return $this;
+	}
+	function getId(){
+		$pk = $this->_table->getPrimaryKey();
+		return isset($this->__data[$pk])?$this->__data[$pk]:null;
 	}
 }
 }
