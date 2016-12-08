@@ -1,98 +1,98 @@
 <?php
 namespace FoxORM\Validation;
 class Ruler {
-	static function required($v){
+	function required($v){
 		if(is_null($v))
 			return false;
 		elseif(is_string($v)&&trim($v)==='')
 			return false;
 		return true;
 	}
-	static function contains($v,$arg){
+	function contains($v,$arg){
 		return in_array(trim(strtolower($v)), explode(chr(32), trim(strtolower($arg))));
 	}
-	static function phone($v){
+	function phone($v){
 		return preg_match("/^((\+\d{1,3}(-| )?\(?\d\)?(-| )?\d{1,5})|(\(?\d{2,6}\)?))(-| )?(\d{3,4})(-| )?(\d{4})(( x| ext)\d{1,5}){0,1}$/",$v);
 	}
-	static function email($v){
+	function email($v){
 		return filter_var($v, \FILTER_VALIDATE_EMAIL);
 	}
-	static function charMax($v,$arg){
+	function charMax($v,$arg){
 		$v = strip_tags($v);
 		$v = str_replace([' ',"\n","\r","\t"],'',$v);
-		return self::maxlength($v,$arg);
+		return $this->maxlength($v,$arg);
 	}
-	static function charMin($v,$arg){
+	function charMin($v,$arg){
 		$v = strip_tags($v);
 		$v = str_replace([' ',"\n","\r","\t"],'',$v);
-		return self::minlength($v,$arg);
+		return $this->minlength($v,$arg);
 	}
-	static function lengthMax($v,$arg){
-		return self::strlen($v)<=(int)$arg;
+	function lengthMax($v,$arg){
+		return $this->strlen($v)<=(int)$arg;
 	}
-	static function lengthMin($v,$arg){
-		return self::strlen($v)>=(int)$arg;
+	function lengthMin($v,$arg){
+		return $this->strlen($v)>=(int)$arg;
 	}
-	static function lengthExact($v,$arg){
-		return self::strlen($v)==(int)$arg;
+	function lengthExact($v,$arg){
+		return $this->strlen($v)==(int)$arg;
 	}
-	static function lengthBetween($value, $min, $max){
-		$length = self::strlen($value);
+	function lengthBetween($value, $min, $max){
+		$length = $this->strlen($value);
 		return $length >= $min && $length <= $max;
 	}
-	static function alpha($v){
+	function alpha($v){
 		return preg_match("/^([a-zÀÁÂÃÄÅÇÈÉÊËÌÍÎÏÒÓÔÕÖÙÚÛÜÝàáâãäåçèéêëìíîïðòóôõöùúûüýÿ])+$/i",$v)!==FALSE;
 	}
-	static function alpha_numeric($v){
+	function alpha_numeric($v){
 		return preg_match("/^([a-z0-9ÀÁÂÃÄÅÇÈÉÊËÌÍÎÏÒÓÔÕÖÙÚÛÜÝàáâãäåçèéêëìíîïðòóôõöùúûüýÿ])+$/i",$v)!==FALSE;
 	}
-	static function alpha_dash($v){
+	function alpha_dash($v){
 		return preg_match("/^([a-z0-9ÀÁÂÃÄÅÇÈÉÊËÌÍÎÏÒÓÔÕÖÙÚÛÜÝàáâãäåçèéêëìíîïðòóôõöùúûüýÿ_-])+$/i",$v)!==FALSE;
 	}
-	static function numeric($v){
+	function numeric($v){
 		return is_numeric($v);
 	}
-	static function maximum($v,$r){
+	function maximum($v,$r){
 		return (float)$v<=(float)$r;
 	}
-	static function minimum($v,$r){
+	function minimum($v,$r){
 		return (float)$v>=(float)$r;
 	}
-	static function bigMaximum($v,$r){
+	function bigMaximum($v,$r){
 		if(function_exists('bccomp'))
 			return !(bccomp($v, $r, 14) == 1);
 		else
 			return $r >= $v;
 	}
-	static function bigMinimum($v,$r){
+	function bigMinimum($v,$r){
 		if(function_exists('bccomp'))
 			return !(bccomp($r, $v, 14) == 1);
 		else
 			return $r <= $v;
 	}
-	static function integer($v){
+	function integer($v){
 		return filter_var($v, \FILTER_VALIDATE_INT)!==false;
 	}
-	static function boolean($v){
+	function boolean($v){
 		return is_bool($v)||is_bool(filter_var($v, \FILTER_VALIDATE_BOOLEAN));
 	}
-	static function float($v){
+	function float($v){
 		return is_float($v)||filter_var($v, \FILTER_VALIDATE_FLOAT);
 	}
-	static function url($v){
+	function url($v){
 		return filter_var($v, \FILTER_VALIDATE_URL);
 	}
-	static function url_exists($v){
+	function url_exists($v){
 		$v = str_replace(['http://','https://','ftp://'],'',strtolower($v)); 
 		return function_exists('checkdnsrr')?checkdnsrr($v):gethostbyname($v)!=$v;
 	}
-	static function ip($v){
+	function ip($v){
 		return filter_var($v,\FILTER_VALIDATE_IP)!==FALSE;
 	}
-	static function name($v){
+	function name($v){
 		return preg_match("/^([a-zÀÁÂÃÄÅÇÈÉÊËÌÍÎÏÒÓÔÕÖÙÚÛÜÝàáâãäåçèéêëìíîïñðòóôõöùúûüýÿ '-])+$/i", $v)!==FALSE;
 	}
-	//static function cc($c){
+	//function cc($c){
 		//$number = preg_replace('/\D/', '', $v);
 		//$number_length = strlen($v);
 	  	//$parity = $number_length % 2;
@@ -107,7 +107,7 @@ class Ruler {
 	  	//}
 		//return $total%10==0;
 	//}
-	static function creditCard($value,$cards=null){
+	function creditCard($value,$cards=null){
 		$numberIsValid = function () use ($value) {
 			$number = preg_replace('/[^0-9]+/', '', $value);
 			$sum = 0;
@@ -159,7 +159,7 @@ class Ruler {
 		}
 		return false;
 	}
-	static function validDate($value){
+	function validDate($value){
 		$isDate = false;
 		if ($value instanceof \DateTime)
 			$isDate = true;
@@ -167,25 +167,25 @@ class Ruler {
 			$isDate = strtotime($value) !== false;
 		return $isDate;
 	}
-	static function dateFormat($value, $format){
+	function dateFormat($value, $format){
 		$parsed = date_parse_from_format($format, $value);
 		return $parsed['error_count'] === 0 && $parsed['warning_count'] === 0;
 	}
-	static function dateBefore($value, $before){
+	function dateBefore($value, $before){
 		$vtime = ($value instanceof \DateTime) ? $value->getTimestamp() : strtotime($value);
 		$ptime = ($before instanceof \DateTime) ? $before->getTimestamp() : strtotime($before);
 		return $vtime < $ptime;
 	}
-	static function dateAfter($value, $after){
+	function dateAfter($value, $after){
 		$vtime = ($value instanceof \DateTime) ? $value->getTimestamp() : strtotime($value);
 		$ptime = ($after instanceof \DateTime) ? $after->getTimestamp() : strtotime($after);
 		return $vtime > $ptime;
 	}
-	static function date($date,$required=false){
+	function date($date,$required=false){
 		if(is_array($date)){
 			$ok = !$required;
 			foreach(array_keys($date) as $k)
-				if(($required||!empty($date[$k]))&&!($ok=self::date($date[$k],$required)))
+				if(($required||!empty($date[$k]))&&!($ok=$this->date($date[$k],$required)))
 					return false;
 			return $ok;
 		}
@@ -195,11 +195,11 @@ class Ruler {
 				   && checkdate($matches['month'],$matches['day'],$matches['year']));
 		}
 	}
-	static function time($time,$required=false){
+	function time($time,$required=false){
 		if(is_array($time)){
 			$ok = !$required;
 			foreach(array_keys($time) as $k)
-				if(($required||!empty($time[$k]))&&!($ok=self::time($time[$k],$required)))
+				if(($required||!empty($time[$k]))&&!($ok=$this->time($time[$k],$required)))
 					return false;
 			return $ok;
 		}
@@ -213,27 +213,27 @@ class Ruler {
 			return $hour>-1&&$hour<24&&$minute>-1&&$minute<60&&$second>-1&&$second<60;
 		}
 	}
-	static function equals($one,$two,$strict=false){
+	function equals($one,$two,$strict=false){
 		return $strict?$one===$two:$one==$two;
 	}
-	static function differents($one,$two,$strict=false){
+	function differents($one,$two,$strict=false){
 		return $strict?$one!==$two:$one!=$two;
 	}
-	static function isArray($a){
+	function isArray($a){
 		return is_array($a);
 	}
-	static function inArray($v,$a,$s=false){
+	function inArray($v,$a,$s=false){
 		return in_array($v,$a,$s);
 	}
-	static function notInArray($v,$a,$s=false){
+	function notInArray($v,$a,$s=false){
 		return !in_array($v,$a,$s);
 	}
-	static function inString($v, $str){
+	function inString($v, $str){
 		if(!is_string($str)||!is_string($v))
 			return false;
 		return (strpos($v,$str)!==false);
 	}
-	static function isInstanceOf($value, $class){
+	function isInstanceOf($value, $class){
 		$isInstanceOf = false;
 		if (is_object($value)) {
 			if(is_object($class) && $value instanceof $class)
@@ -245,14 +245,14 @@ class Ruler {
 			$isInstanceOf = true;
 		return $isInstanceOf;
 	}
-	static function regex($v, $regex){
+	function regex($v, $regex){
 		return preg_match($regex, $v);
 	}
-	protected static function stringLength($value){
+	protected function stringLength($value){
 		return function_exists('mb_strlen')?mb_strlen($value):strlen($value);
 	}
 	
-	static function checkLuhn($val) {
+	function checkLuhn($val) {
 		$len = strlen($val);
 		$total = 0;
 		for ($i = 1; $i <= $len; $i++) {
@@ -268,16 +268,16 @@ class Ruler {
 		return !!($total % 10 == 0);
 	}
 
-	static function siret($siret) {
-		return static::checkLuhn($siret);
+	function siret($siret) {
+		return $this->checkLuhn($siret);
 	}
-	static function siren($siren) {
-		return static::checkLuhn($siren);
+	function siren($siren) {
+		return $this->checkLuhn($siren);
 	}
-	static function siret2siren($siret) {
+	function siret2siren($siret) {
 		return substr($siret,0,9);
 	}
-	static function siren2tvaFR($siren) {
+	function siren2tvaFR($siren) {
 		return "FR" . (( 12 + 3 * ( $siren % 97 ) ) % 97 ) . $siren;
 	}
 }
