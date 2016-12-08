@@ -50,9 +50,7 @@ $files = [
 	'Helper/Pagination.php',
 	'Helper/SqlLogger.php',
 	
-	'Validation/Ruler.php',
 	'Validation/Exception.php',
-	'Validation/Filter.php',
 	
 	'MainDb.php',
 	'F.php',
