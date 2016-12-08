@@ -1,56 +1,47 @@
 <?php namespace FoxORM\Validation;
 //see http://www.php.net/manual/en/filter.filters.sanitize.php
-abstract class Filter{
-	const BASIC_TAGS = 'br,p,a,strong,b,i,em,img,blockquote,code,dd,dl,hr,h1,h2,h3,h4,h5,h6,label,ul,li,span,sub,sup';
-	const ALL_TAGS = '!--,!DOCTYPE,a,abbr,acronym,address,applet,area,article,aside,audio,b,base,basefont,bdi,bdo,big,blockquote,body,br,button,canvas,caption,center,cite,code,col,colgroup,command,datalist,dd,del,details,dfn,dialog,dir,div,dl,dt,em,embed,fieldset,figcaption,figure,font,footer,form,frame,frameset,head,header,h1>-<h6,hr,html,i,iframe,img,input,ins,kbd,keygen,label,legend,li,link,map,mark,menu,meta,meter,nav,noframes,noscript,object,ol,optgroup,option,output,p,param,pre,progress,q,rp,rt,ruby,s,samp,script,section,select,small,source,span,strike,strong,style,sub,summary,sup,table,tbody,td,textarea,tfoot,th,thead,time,title,tr,track,tt,u,ul,var,video,wbr';
-	static function trim($v){
-		return trim($v);
-	}
-	static function rmpunctuation($v){
-		return preg_replace("/(?![.=$'€%-])\p{P}/u", '', $v);
-	}
-	static function sanitize_string($v){
-		return filter_var($v, FILTER_SANITIZE_STRING);
-	}
-	static function url($v){
-		return filter_var($v, FILTER_SANITIZE_URL);
-	}
-	static function urlencode($v){
-		return filter_var($v, FILTER_SANITIZE_ENCODED);
-	}
-	static function htmlencode($v){
-		return filter_var($v, FILTER_SANITIZE_SPECIAL_CHARS);
-	}
-	static function sanitize_email($v){
-		return filter_var($v, FILTER_SANITIZE_EMAIL);
-	}
-	static function sanitize_numbers($v){
-		return filter_var($v, FILTER_SANITIZE_NUMBER_INT);
-	}
-	static function dpToDate($v){
-		return self::dp_to_date($v);
-	}
-
-	/*
-	$str = filter::strip_tags_basic('<p id="first"><b src="new-text" class=myclass><img src="test" width="120" height="100" /><test data-toto="ok" foo="bar">Hello <y>World</y></test></b></p>',
-		array(
-			'img'=>'src,width,height',
-			'test'=>'data-*',
-		)
-	);
-	*/
-	static $basic_tags_map = [
+class Filter{
+	protected $basic_tags = 'br,p,a,strong,b,i,em,img,blockquote,code,dd,dl,hr,h1,h2,h3,h4,h5,h6,label,ul,li,span,sub,sup';
+	protected $all_tags = '!--,!DOCTYPE,a,abbr,acronym,address,applet,area,article,aside,audio,b,base,basefont,bdi,bdo,big,blockquote,body,br,button,canvas,caption,center,cite,code,col,colgroup,command,datalist,dd,del,details,dfn,dialog,dir,div,dl,dt,em,embed,fieldset,figcaption,figure,font,footer,form,frame,frameset,head,header,h1>-<h6,hr,html,i,iframe,img,input,ins,kbd,keygen,label,legend,li,link,map,mark,menu,meta,meter,nav,noframes,noscript,object,ol,optgroup,option,output,p,param,pre,progress,q,rp,rt,ruby,s,samp,script,section,select,small,source,span,strike,strong,style,sub,summary,sup,table,tbody,td,textarea,tfoot,th,thead,time,title,tr,track,tt,u,ul,var,video,wbr';
+	protected $basic_tags_map = [
 		'img'=>'src,width,height,alt',
 		'a'=>'href,title',
 	];
-	static $basic_attrs = [
-		
-	];
-	static function strip_tags_basic($str,$map=null){
-		$map = $map?array_merge($map,self::$basic_tags_map):self::$basic_tags_map;
-		return self::strip_tags($str,explode(',',self::BASIC_TAGS),self::$basic_attrs,$map);
+	protected $basic_attrs = [];
+	
+	function trim($v){
+		return trim($v);
 	}
-	static function strip_tags($str,$tags,$globals_attrs=null,$map=null){
+	function rmpunctuation($v){
+		return preg_replace("/(?![.=$'€%-])\p{P}/u", '', $v);
+	}
+	function sanitize_string($v){
+		return filter_var($v, FILTER_SANITIZE_STRING);
+	}
+	function url($v){
+		return filter_var($v, FILTER_SANITIZE_URL);
+	}
+	function urlencode($v){
+		return filter_var($v, FILTER_SANITIZE_ENCODED);
+	}
+	function htmlencode($v){
+		return filter_var($v, FILTER_SANITIZE_SPECIAL_CHARS);
+	}
+	function sanitize_email($v){
+		return filter_var($v, FILTER_SANITIZE_EMAIL);
+	}
+	function sanitize_numbers($v){
+		return filter_var($v, FILTER_SANITIZE_NUMBER_INT);
+	}
+	function dpToDate($v){
+		return $this->dp_to_date($v);
+	}
+
+	function strip_tags_basic($str,$map=null){
+		$map = $map?array_merge($map,$this->basic_tags_map):$this->basic_tags_map;
+		return $this->strip_tags($str,explode(',',$this->basic_tags),$this->basic_attrs,$map);
+	}
+	function strip_tags($str,$tags,$globals_attrs=null,$map=null){
 		$total = strlen($str);
 		$nstr = '';
 		if($tags&&is_string($tags))
@@ -140,7 +131,7 @@ abstract class Filter{
 		return $nstr;
 	}
 	
-	static function multi_bin($v){
+	function multi_bin($v){
 		if(is_array($v)){
 			$binary = 0;
 			foreach($v as $bin)
