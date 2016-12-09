@@ -25,6 +25,7 @@
 	"minimum-stability": "dev",
 	"suggest": {
 		"redcatphp/strategy": "Use Dependency Injection Container for registry",
+		"foxorm/validate": "Pluginisable validation Rules and Filters",
 		"redcatphp/debug": "For pretty debug"
 	}
 }
