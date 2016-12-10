@@ -1,5 +1,6 @@
 <?php
 namespace FoxORM;
+use FoxORM\Validate\Validate;
 class Bases implements \ArrayAccess{
 	private $map;
 	private $mapObjects= [];
@@ -14,6 +15,7 @@ class Bases implements \ArrayAccess{
 	private $many2manyPrefix;
 	private $tableWrapperClassDefault;
 	private $debug;
+	private $validateService;
 	function __construct(array $map = [],$modelClassPrefix='Model\\',$entityClassDefault='stdClass',$primaryKeyDefault='id',$uniqTextKeyDefault='uniq',array $primaryKeys=[],array $uniqTextKeys=[],$many2manyPrefix='',$tableWrapperClassDefault=false,$debug=DataSource::DEBUG_DEFAULT){
 		$this->map = $map;
 		$this->modelClassPrefix = (array)$modelClassPrefix;
@@ -25,6 +27,11 @@ class Bases implements \ArrayAccess{
 		$this->many2manyPrefix = $many2manyPrefix;
 		$this->tableWrapperClassDefault = $tableWrapperClassDefault;
 		$this->debug = $debug;
+		
+		if(class_exists(Validate::class)){
+			$this->validateService = new Validate();
+		}
+		
 	}
 	function debug($level=DataSource::DEBUG_ON){
 		$this->debug = $level;
@@ -155,5 +162,8 @@ class Bases implements \ArrayAccess{
 			$dataSource->setTableWapperFactory($this->tableWrapperFactory);
 		}
 		return $dataSource;
+	}
+	function getValidateService(){
+		return $this->validateService;
 	}
 }
