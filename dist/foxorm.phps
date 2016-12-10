@@ -219,6 +219,7 @@ class Exception extends \Exception {}
 #Bases.php
 
 namespace FoxORM {
+use FoxORM\Validate\Validate;
 class Bases implements \ArrayAccess{
 	private $map;
 	private $mapObjects= [];
@@ -233,6 +234,7 @@ class Bases implements \ArrayAccess{
 	private $many2manyPrefix;
 	private $tableWrapperClassDefault;
 	private $debug;
+	private $validateService;
 	function __construct(array $map = [],$modelClassPrefix='Model\\',$entityClassDefault='stdClass',$primaryKeyDefault='id',$uniqTextKeyDefault='uniq',array $primaryKeys=[],array $uniqTextKeys=[],$many2manyPrefix='',$tableWrapperClassDefault=false,$debug=DataSource::DEBUG_DEFAULT){
 		$this->map = $map;
 		$this->modelClassPrefix = (array)$modelClassPrefix;
@@ -244,6 +246,11 @@ class Bases implements \ArrayAccess{
 		$this->many2manyPrefix = $many2manyPrefix;
 		$this->tableWrapperClassDefault = $tableWrapperClassDefault;
 		$this->debug = $debug;
+		
+		if(class_exists(Validate::class)){
+			$this->validateService = new Validate();
+		}
+		
 	}
 	function debug($level=DataSource::DEBUG_ON){
 		$this->debug = $level;
@@ -375,6 +382,9 @@ class Bases implements \ArrayAccess{
 		}
 		return $dataSource;
 	}
+	function getValidateService(){
+		return $this->validateService;
+	}
 }
 }
 #DataSource.php
@@ -387,6 +397,7 @@ use FoxORM\Std\ScalarInterface;
 use FoxORM\Entity\StateFollower;
 use FoxORM\Entity\Box;
 use FoxORM\Entity\Observer;
+use FoxORM\Entity\RulableInterface;
 abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 	const DEBUG_OFF = 0;
 	const DEBUG_ERROR = 1;
@@ -667,6 +678,14 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		$this->trigger($type,'beforeRecursive',$obj,'recursive',true);
 		
 		if(!isset($obj->_modified)||$obj->_modified!==false||!isset($id)){
+			
+			if($obj instanceof RulableInterface){
+				$this->trigger($type,'beforeValidate',$obj);
+				$obj->applyValidateRules();
+				$obj->applyValidateFilters();
+				$this->trigger($type,'afterValidate',$obj);
+			}
+			
 			$this->trigger($type,'beforePut',$obj);
 			$this->trigger($type,'serializeColumns',$obj);
 			if($update){
@@ -998,6 +1017,12 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		return $this->entity($name,$data,$filter,$reversedFilter);
 	}
 	function entity($name,$data=null,$filter=null,$reversedFilter=false){
+		return $this->entityMaker($name,$data,$filter,$reversedFilter,true);
+	}
+	function entityFactory($name,$data=null){
+		return $this->entityMaker($name,$data,null,null,false);
+	}
+	function entityMaker($name,$data=null,$filter=null,$reversedFilter=false,$modified=null){
 		if($data&&is_array($filter)){
 			$data = $this->dataFilter($data,$filter,$reversedFilter);
 		}
@@ -1011,34 +1036,20 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		$row->_type = $name;
 		if($row instanceof Box)
 			$row->setDatabase($this);
-		$row->_modified = true;
+		if(isset($modified)){
+			$row->_modified = $modified;
+		}
 		if($data){
+			if($modified===false&&$row instanceof StateFollower){
+				$row->__readingState(true);
+			}
 			foreach($data as $k=>$v){
 				if($k=='_type') continue;
 				$row->$k = $v;
 			}
-		}
-		return $row;
-	}
-	function entityFactory($name,$data=null){
-		if($this->entityFactory){
-			$row = call_user_func($this->entityFactory,$name,$this);
-		}
-		else{
-			$c = $this->findEntityClass($name);
-			$row = new $c;
-		}
-		$row->_type = $name;
-		if($row instanceof Box)
-			$row->setDatabase($this);
-		if($data){
-			if($row instanceof StateFollower)
-				$row->__readingState(true);
-			foreach($data as $k=>$v){
-				$row->$k = $v;
-			}
-			if($row instanceof StateFollower)
+			if($modified===false&&$row instanceof StateFollower){
 				$row->__readingState(false);
+			}
 		}
 		return $row;
 	}
@@ -1331,6 +1342,9 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 	
 	function getAllIterator($q, $bind){
 		return new ArrayIterator($this->getAll($q, $bind));
+	}
+	function getValidateService(){
+		return $this->bases->getValidateService();
 	}
 }
 }
@@ -5645,6 +5659,8 @@ use FoxORM\Std\ArrayIterator;
 abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSerializable{
 	private static $defaultEvents = [
 		'beforeRecursive',
+		'beforeValidate',
+		'afterValidate',
 		'beforePut',
 		'beforeCreate',
 		'beforeRead',
