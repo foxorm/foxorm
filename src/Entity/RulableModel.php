@@ -6,20 +6,23 @@ class RulableModel extends Model implements RulableInterface {
 	protected $validateFilters = [];
 	function applyValidatePreFilters(){
 		$this
-			->db->getValidateService()
+			->getValidate()
 			->createFilter($this->validatePreFilters)
 			->filterByReference($this);
 	}
 	function applyValidateRules(){
 		$this
-			->db->getValidateService()
+			->getValidate()
 			->createRule($this->validateRules)
 			->assert($this);
 	}
 	function applyValidateFilters(){
 		$this
-			->db->getValidateService()
+			->getValidate()
 			->createFilter($this->validateFilters)
 			->filterByReference($this);
+	}
+	function getValidate(){
+		return $this->db->getValidateService();
 	}
 }
