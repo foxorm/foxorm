@@ -7827,6 +7827,46 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 	}
 }
 }
+#Entity/RulableInterface.php
+
+namespace FoxORM\Entity {
+interface RulableInterface{
+	function applyValidatePreFilters();
+	function applyValidateRules();
+	function applyValidateFilters();
+	function getValidate();
+}
+}
+#Entity/RulableModel.php
+
+namespace FoxORM\Entity {
+class RulableModel extends Model implements RulableInterface {
+	protected $validatePreFilters = [];
+	protected $validateRules = [];
+	protected $validateFilters = [];
+	function applyValidatePreFilters(){
+		$this
+			->getValidate()
+			->createFilter($this->validatePreFilters)
+			->filterByReference($this);
+	}
+	function applyValidateRules(){
+		$this
+			->getValidate()
+			->createRule($this->validateRules)
+			->assert($this);
+	}
+	function applyValidateFilters(){
+		$this
+			->getValidate()
+			->createFilter($this->validateFilters)
+			->filterByReference($this);
+	}
+	function getValidate(){
+		return $this->db->getValidateService();
+	}
+}
+}
 #Helper/Pagination.php
 
 namespace FoxORM\Helper {
