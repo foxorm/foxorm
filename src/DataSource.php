@@ -291,6 +291,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 			
 			if($obj instanceof RulableInterface){
 				$this->trigger($type,'beforeValidate',$obj);
+				$obj->applyValidatePreFilters();
 				$obj->applyValidateRules();
 				$obj->applyValidateFilters();
 				$this->trigger($type,'afterValidate',$obj);
