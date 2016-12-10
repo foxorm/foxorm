@@ -10,6 +10,9 @@ class RulableModel extends Model implements RulableInterface {
 			->assert($this);
 	}
 	function applyValidateFilters(){
-		
+		$this
+			->db->getValidateService()
+			->createFilter($this->validateFilters)
+			->filterByReference($this);
 	}
 }
