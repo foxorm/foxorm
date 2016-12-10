@@ -7,6 +7,7 @@ use FoxORM\Std\ScalarInterface;
 use FoxORM\Entity\StateFollower;
 use FoxORM\Entity\Box;
 use FoxORM\Entity\Observer;
+use FoxORM\Entity\RulableInterface;
 abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 	const DEBUG_OFF = 0;
 	const DEBUG_ERROR = 1;
@@ -287,6 +288,13 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		$this->trigger($type,'beforeRecursive',$obj,'recursive',true);
 		
 		if(!isset($obj->_modified)||$obj->_modified!==false||!isset($id)){
+			
+			if($obj instanceof RulableInterface){
+				$this->trigger($type,'beforeValidate',$obj);
+				$obj->applyValidateRules();
+				$obj->applyValidateFilters();
+				$this->trigger($type,'afterValidate',$obj);
+			}
 			
 			$this->trigger($type,'beforePut',$obj);
 			$this->trigger($type,'serializeColumns',$obj);
@@ -944,5 +952,8 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 	
 	function getAllIterator($q, $bind){
 		return new ArrayIterator($this->getAll($q, $bind));
+	}
+	function getValidateService(){
+		return $this->bases->getValidateService();
 	}
 }
