@@ -6,6 +6,8 @@ use FoxORM\Std\ArrayIterator;
 abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSerializable{
 	private static $defaultEvents = [
 		'beforeRecursive',
+		'beforeValidate',
+		'afterValidate',
 		'beforePut',
 		'beforeCreate',
 		'beforeRead',
