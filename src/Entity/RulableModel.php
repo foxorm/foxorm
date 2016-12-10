@@ -1,16 +1,15 @@
 <?php
 namespace FoxORM\Entity;
 class RulableModel extends Model implements RulableInterface {
-	protected $validateService;
 	protected $validateRules = [];
 	protected $validateFilters = [];
-	function getValidateService(){
-		return $this->db->getValidateService();
+	function applyValidateRules(){
+		$this
+			->db->getValidateService()
+			->createRule($this->validateRules)
+			->assert($this);
 	}
-	function getValidateRules(){
-		return $this->validateRules;
-	}
-	function getValidateFilters(){
-		return $this->validateFilters;
+	function applyValidateFilters(){
+		
 	}
 }
