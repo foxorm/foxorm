@@ -46,6 +46,8 @@ $files = [
 	'Entity/Box.php',
 	'Entity/Observer.php',
 	'Entity/Model.php',
+	'Entity/RulableInterface.php',
+	'Entity/RulableModel.php',
 	
 	'Helper/Pagination.php',
 	'Helper/SqlLogger.php',
