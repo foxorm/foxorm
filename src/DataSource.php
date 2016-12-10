@@ -287,6 +287,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		$this->trigger($type,'beforeRecursive',$obj,'recursive',true);
 		
 		if(!isset($obj->_modified)||$obj->_modified!==false||!isset($id)){
+			
 			$this->trigger($type,'beforePut',$obj);
 			$this->trigger($type,'serializeColumns',$obj);
 			if($update){
@@ -618,6 +619,12 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		return $this->entity($name,$data,$filter,$reversedFilter);
 	}
 	function entity($name,$data=null,$filter=null,$reversedFilter=false){
+		return $this->entityMaker($name,$data,$filter,$reversedFilter,true);
+	}
+	function entityFactory($name,$data=null){
+		return $this->entityMaker($name,$data,null,null,false);
+	}
+	function entityMaker($name,$data=null,$filter=null,$reversedFilter=false,$modified=null){
 		if($data&&is_array($filter)){
 			$data = $this->dataFilter($data,$filter,$reversedFilter);
 		}
@@ -631,34 +638,20 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		$row->_type = $name;
 		if($row instanceof Box)
 			$row->setDatabase($this);
-		$row->_modified = true;
+		if(isset($modified)){
+			$row->_modified = $modified;
+		}
 		if($data){
+			if($modified===false&&$row instanceof StateFollower){
+				$row->__readingState(true);
+			}
 			foreach($data as $k=>$v){
 				if($k=='_type') continue;
 				$row->$k = $v;
 			}
-		}
-		return $row;
-	}
-	function entityFactory($name,$data=null){
-		if($this->entityFactory){
-			$row = call_user_func($this->entityFactory,$name,$this);
-		}
-		else{
-			$c = $this->findEntityClass($name);
-			$row = new $c;
-		}
-		$row->_type = $name;
-		if($row instanceof Box)
-			$row->setDatabase($this);
-		if($data){
-			if($row instanceof StateFollower)
-				$row->__readingState(true);
-			foreach($data as $k=>$v){
-				$row->$k = $v;
-			}
-			if($row instanceof StateFollower)
+			if($modified===false&&$row instanceof StateFollower){
 				$row->__readingState(false);
+			}
 		}
 		return $row;
 	}
