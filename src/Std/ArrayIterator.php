@@ -6,6 +6,7 @@ use Iterator;
 use JsonSerializable;
 use Countable;
 use stdClass;
+use BadMethodCallException;
 class ArrayIterator implements ArrayAccess,Iterator,JsonSerializable,Countable{
 	private $__readingState;
 	private $__modified = false;
@@ -135,6 +136,6 @@ class ArrayIterator implements ArrayAccess,Iterator,JsonSerializable,Countable{
 		if(is_object($this->data)){
 			return call_user_func_array([$this->data,$f],$args);
 		}
-		throw new \BadMethodCallException('Call to undefined method '.get_class($this).'->'.$f);
+		throw new BadMethodCallException('Call to undefined method '.get_class($this).'->'.$f);
 	}
 }

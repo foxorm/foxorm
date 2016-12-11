@@ -1,6 +1,5 @@
 <?php
 namespace FoxORM\DataSource;
-use FoxORM\Exception;
 class Sqlite extends SQL{
 	const C_DATATYPE_INTEGER   = 0;
 	const C_DATATYPE_NUMERIC   = 1;
@@ -56,10 +55,10 @@ class Sqlite extends SQL{
 	function createDatabase($dbfile){
 		$dir = dirname($dbfile);
 		if(is_dir($dir)){
-			throw new Exception('Unable to write '.$dbfile.' db file');
+			throw $this->schemaException('Unable to write '.$dbfile.' db file');
 		}
 		elseif(!mkdir($dir,0777,true)){
-			throw new Exception('Unable to make '.dirname($dbfile).' directory');
+			throw $this->schemaException('Unable to make '.dirname($dbfile).' directory');
 		}
 	}
 	function scanType( $value, $flagSpecial = FALSE ){
@@ -353,7 +352,7 @@ class Sqlite extends SQL{
 					$columns[] = $col;
 			}
 			if(empty($columns))
-				throw new Exception('Unable to find columns from "'.$table.'" to create FTS table "'.$ftsTable.'"');
+				throw $this->schemaException('Unable to find columns from "'.$table.'" to create FTS table "'.$ftsTable.'"');
 		}
 		$ftsType = $type.$this->ftsTableSuffix;
 		$pTable = $this->prefixTable($type);

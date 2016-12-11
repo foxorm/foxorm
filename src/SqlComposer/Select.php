@@ -1,5 +1,6 @@
 <?php
 namespace FoxORM\SqlComposer;
+use BadMethodCallException;
 class Select extends Where {
 	protected $distinct = false;
 	protected $group_by = [];
@@ -120,7 +121,7 @@ class Select extends Where {
 		return $this;
 	}
 	function havingIn($having,  array $params) {
-		if (!is_string($having)) throw new Exception("Method having_in must be called with a string as first argument.");
+		if (!is_string($having)) throw new BadMethodCallException("Method having_in must be called with a string as first argument.");
 		list($having, $params) = self::in($having, $params);
 		return $this->having($having, $params);
 	}
@@ -192,7 +193,7 @@ class Select extends Where {
 		return $this;
 	}
 	function unHavingIn($having,  array $params){
-		if (!is_string($having)) throw new Exception("Method having_in must be called with a string as first argument.");
+		if (!is_string($having)) throw new BadMethodCallException("Method having_in must be called with a string as first argument.");
 		list($having, $params) = self::in($having, $params);
 		return $this->unHaving($having, $params);
 	}

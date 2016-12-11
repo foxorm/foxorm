@@ -3,6 +3,7 @@ namespace FoxORM;
 use FoxORM\Helper\Pagination;
 use FoxORM\Std\Cast;
 use FoxORM\Std\ArrayIterator;
+use BadMethodCallException;
 abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSerializable{
 	private static $defaultEvents = [
 		'beforeRecursive',
@@ -276,7 +277,7 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 		if($this->tableWrapper&&method_exists($this->tableWrapper,$f)){
 			return call_user_func_array([$this->tableWrapper,$f],$args);
 		}
-		throw new \BadMethodCallException('Call to undefined method '.get_class($this).'->'.$f);
+		throw new BadMethodCallException('Call to undefined method '.get_class($this).'->'.$f);
 	}
 	
 	function jsonSerialize(){

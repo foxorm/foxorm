@@ -2,6 +2,7 @@
 namespace FoxORM\Entity;
 use FoxORM\DataSource;
 use FoxORM\DataTable;
+use BadMethodCallException;
 class TableWrapper implements \ArrayAccess,\Iterator,\Countable,\JsonSerializable{
 	protected $type;
 	protected $db;
@@ -19,7 +20,7 @@ class TableWrapper implements \ArrayAccess,\Iterator,\Countable,\JsonSerializabl
 		if(method_exists($this->dataTable,$f)){
 			return call_user_func_array([$this->dataTable,$f],$args);
 		}
-		throw new \BadMethodCallException('Call to undefined method '.get_class($this).'->'.$f);
+		throw new BadMethodCallException('Call to undefined method '.get_class($this).'->'.$f);
 	}
 	function offsetExists($id){
 		return $this->dataTable->offsetExists($id);

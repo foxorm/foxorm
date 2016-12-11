@@ -1,6 +1,7 @@
 <?php
 namespace FoxORM\DataSource;
-use FoxORM\Exception;
+use PDOException;
+use BadMethodCallException;
 class Cubrid extends SQL{
 	const C_DATATYPE_INTEGER          = 0;
 	const C_DATATYPE_BIGINT           = 1;
@@ -40,7 +41,7 @@ class Cubrid extends SQL{
 			$this->pdo->exec('SET TRACE ON');
 	}
 	function createDatabase($dbname){
-		throw new Exception('Unable to create database '.$dbname.'. CUBRID does not allow to create or drop a database from within the SQL query');
+		throw $this->schemaException('Unable to create database '.$dbname.'. CUBRID does not allow to create or drop a database from within the SQL query');
 	}
 	function scanType($value, $flagSpecial = false){
 		if ( is_null( $value ) )
@@ -135,7 +136,7 @@ class Cubrid extends SQL{
 		$sql  = "ALTER TABLE $table ADD CONSTRAINT FOREIGN KEY($column) REFERENCES $targetTable($targetColumn) ON DELETE $casc";
 		try {
 			$this->execute($sql);
-		} catch( \PDOException $e ) {
+		} catch( PDOException $e ) {
 			return false;
 		}
 		return true;
@@ -194,7 +195,7 @@ class Cubrid extends SQL{
 			$this->execute("ALTER TABLE $table ADD CONSTRAINT UNIQUE `$name` (" . implode( ',', $columns ) . ")");
 	}
 	protected function _getUniqueConstraints($type,$prefix=true){
-		throw new \Exception('method '.__FUNCTION__.' is not allready implemented in '.__CLASS__.', too busy for now, if you want to write it, feel free to do and send me the source');
+		throw new BadMethodCallException('method '.__FUNCTION__.' is not allready implemented in '.__CLASS__.', too busy for now, if you want to write it, feel free to do and send me the source');
 	}
 	protected function _addIndex( $type, $column, $name=null ){
 		if(!$name) $name = 'index_'.$property;
@@ -204,7 +205,7 @@ class Cubrid extends SQL{
 			$column = $this->esc( $column );
 			$this->execute("CREATE INDEX $name ON $table ($column) ");
 			return true;
-		} catch ( \PDOException $e ) {
+		} catch ( PDOException $e ) {
 			return false;
 		}
 	}

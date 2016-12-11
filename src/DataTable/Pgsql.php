@@ -1,5 +1,6 @@
 <?php
 namespace FoxORM\DataTable;
+use InvalidArgumentException;
 class Pgsql extends SQL{
 	protected $fulltextHeadline = [
 		'MaxFragments'=>2,
@@ -14,7 +15,7 @@ class Pgsql extends SQL{
 	protected $fullTextSearchLang;
 	function setFullTextSearchLang($lang){
 		if(!preg_match('/[a-z]/i',$lang))
-			throw new Exception('Lang "'.$lang.'" is not a valid lang name');
+			throw new InvalidArgumentException('Lang "'.$lang.'" is not a valid lang name');
 		$this->fullTextSearchLang = $lang;
 	}
 	function setFulltextHeadline($config){

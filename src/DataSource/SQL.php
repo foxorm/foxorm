@@ -3,10 +3,12 @@ namespace FoxORM\DataSource;
 use FoxORM\Std\Cast;
 use FoxORM\DataSource;
 use FoxORM\Helper\SqlLogger;
-use FoxORM\Exception;
+use FoxORM\Exception\QueryException;
+use FoxORM\Exception\SchemaException;
 use FoxORM\Entity\StateFollower;
 use FoxORM\Entity\Observer;
 use PDOException;
+use InvalidArgumentException;
 abstract class SQL extends DataSource{
 	protected $dsn;
 	protected $pdo;
@@ -281,7 +283,7 @@ abstract class SQL extends DataSource{
 	}
 	function setMaxIntBind( $max ){
 		if ( !is_integer( $max ) )
-			throw new \InvalidArgumentException( 'Parameter has to be integer.' );
+			throw new InvalidArgumentException( 'Parameter has to be integer.' );
 		$oldMax = $this->max;
 		$this->max = $max;
 		return $oldMax;
@@ -570,8 +572,9 @@ abstract class SQL extends DataSource{
 					break;
 		}
 		while($containA);
-		if(($c=substr_count($sql,'?'))!=($c2=count($binds)))
-			throw new Exception('ERROR: Query "'.$sql.'" need '.$c.' parameters, but request give '.$c2);
+		if(($c=substr_count($sql,'?'))!=($c2=count($binds))){
+			throw $this->queryException('ERROR: Query "'.$sql.'" need '.$c.' parameters, but request give '.$c2,$sql,$binds);
+		}
 		return [$sql,$binds];
 	}
 	
@@ -762,7 +765,7 @@ abstract class SQL extends DataSource{
 	
 	function check($struct){
 		if(!preg_match('/^[a-zA-Z0-9_-]+$/',$struct))
-			throw new \InvalidArgumentException('Table or Column name "'.$struct.'" does not conform to FoxORM security policies' );
+			throw new InvalidArgumentException('Table or Column name "'.$struct.'" does not conform to FoxORM security policies' );
 		return $struct;
 	}
 	function esc($esc){
@@ -1351,6 +1354,18 @@ abstract class SQL extends DataSource{
 		$r = $this->_addIndex($type,$property,$name);
 		$this->performingSystemQuery = $tmp;
 		return $r;
+	}
+	protected function queryException($message,$q,$p=[]){
+		$e = new QueryException($message);
+		$e->setDB($this);
+		$e->setQuery($q);
+		$e->setParams($p);
+		return $e;
+	}
+	protected function schemaException($message){
+		$e = new SchemaException($message);
+		$e->setDB($this);
+		return $e;
 	}
 	
 	abstract protected function _getTablesQuery();

@@ -1,6 +1,7 @@
 <?php
 namespace FoxORM;
 use FoxORM\Validate\Validate;
+use InvalidArgumentException;
 class Bases implements \ArrayAccess{
 	private $map;
 	private $mapObjects= [];
@@ -64,7 +65,7 @@ class Bases implements \ArrayAccess{
 	}
 	function offsetGet($k){
 		if(!isset($this->map[$k]))
-			throw new Exception('Try to access undefined DataSource layer "'.$k.'"');
+			throw new InvalidArgumentException('Try to access undefined DataSource layer "'.$k.'"');
 		if(!isset($this->mapObjects[$k])){
 			$this->mapObjects[$k] = $this->loadDataSource($this->map[$k]);
 			if($this->debug){
@@ -113,7 +114,7 @@ class Bases implements \ArrayAccess{
 			$config['type'] = $type;
 		}
 		else{
-			throw new \InvalidArgumentException('Undefined type of DataSource, please use atleast key type, dsn or offset 0');
+			throw new InvalidArgumentException('Undefined type of DataSource, please use atleast key type, dsn or offset 0');
 		}
 		
 		if(isset($config['modelClassPrefix'])){

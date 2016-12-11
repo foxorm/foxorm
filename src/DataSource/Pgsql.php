@@ -348,7 +348,7 @@ WHERE tc.table_name = ? AND tc.constraint_type = 'UNIQUE'",[$table]);
 		if(empty($columns)){
 			$columns = $this->autoFillTextColumns($type,$uniqTextKey);
 			if(empty($columns))
-				throw new Exception('Unable to find columns from "'.$table.'" to create FTS column "'.$col.'"');
+				throw $this->schemaException('Unable to find columns from "'.$table.'" to create FTS column "'.$col.'"');
 			sort($columns);
 			$indexName = '_auto_'.implode('_',$columns);
 			$vacuum = false;

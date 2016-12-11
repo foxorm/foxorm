@@ -1,6 +1,7 @@
 <?php
 namespace FoxORM;
 use RedCat\Strategy\Di;
+use BadMethodCallException;
 class F{
 	protected static $bases;
 	protected static $currentDataSource;
@@ -44,7 +45,7 @@ class F{
 	static function __callStatic($f,$args){
 		self::_init();
 		if(!isset(self::$currentDataSource))
-			throw new Exception('Use '.__CLASS__.'::setup() first');
+			throw new BadMethodCallException('Use '.__CLASS__.'::setup() first');
 		return call_user_func_array([self::$currentDataSource,$f],$args);
 	}
 	

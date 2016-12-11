@@ -1,7 +1,6 @@
 <?php
 namespace FoxORM\DataTable;
 use FoxORM\Std\Cast;
-use FoxORM\Exception;
 use FoxORM\DataTable;
 use FoxORM\SqlComposer\Select;
 use FoxORM\SqlComposer\Insert;
@@ -11,6 +10,7 @@ use FoxORM\SqlComposer\Delete;
 use FoxORM\Entity\StateFollower;
 use FoxORM\DataSource;
 use FoxORM\DataSource\SQL as DataSourceSQL;
+use BadMethodCallException;
 class SQL extends DataTable{
 	private $stmt;
 	private $row;
@@ -428,7 +428,7 @@ class SQL extends DataTable{
 	
 	function trySelect($col, array $params = null){
 		if(!$this->isSimpleColumnName($col,true)){
-			throw new Exception("You can't make a trySelect on a non simpleColumnName: '$col'");
+			throw new BadMethodCallException("You can't make a trySelect on a non simpleColumnName: '$col'");
 		}
 		if($this->columnExists($col)){
 			$this->select->select($col, $params);
@@ -444,7 +444,7 @@ class SQL extends DataTable{
 			$where = $col.' = ?';
 		}
 		if(!$this->isSimpleColumnName($col,true)){
-			throw new Exception("You can't make a tryWhere on a non simpleColumnName: '$col'");
+			throw new BadMethodCallException("You can't make a tryWhere on a non simpleColumnName: '$col'");
 		}
 		if($this->columnExists($col)){
 			$this->select->where($where, $params);

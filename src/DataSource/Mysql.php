@@ -1,6 +1,5 @@
 <?php
 namespace FoxORM\DataSource;
-use FoxORM\Exception;
 class Mysql extends SQL{
 	const C_DATATYPE_BOOL             = 0;
 	const C_DATATYPE_UINT32           = 1;
@@ -442,7 +441,7 @@ class Mysql extends SQL{
 		if(empty($columns)){
 			$columns = $this->autoFillTextColumns($type,$uniqTextKey);
 			if(empty($columns))
-				throw new Exception('Unable to find columns from "'.$table.'" to create FTS table for "'.$type.'"');
+				throw $this->schemaException('Unable to find columns from "'.$table.'" to create FTS table for "'.$type.'"');
 			$indexName = '_auto';
 			sort($columns);
 			if(isset($ftsMap[$indexName])&&$ftsMap[$indexName]!==$columns){
@@ -465,7 +464,7 @@ class Mysql extends SQL{
 		if(empty($columns)){
 			$columns = $this->autoFillTextColumns($type,$uniqTextKey);
 			if(empty($columns))
-				throw new Exception('Unable to find columns from "'.$table.'" to create FTS table "'.$ftsTable.'"');
+				throw $this->schemaException('Unable to find columns from "'.$table.'" to create FTS table "'.$ftsTable.'"');
 			$indexName = '_auto';
 			sort($columns);
 			if(isset($ftsMap[$indexName])&&$ftsMap[$indexName]!==$columns){

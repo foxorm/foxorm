@@ -1,6 +1,6 @@
 <?php
 namespace FoxORM\Entity;
-use FoxORM\Exception;
+use FoxORM\Exception\ValidationException;
 class RulableModel extends Model implements RulableInterface {
 	protected $validatePreFilters = [];
 	protected $validateRules = [];
@@ -15,7 +15,10 @@ class RulableModel extends Model implements RulableInterface {
 					$this->__unset($k);
 				}
 				else{
-					throw new Exception('Property '.$k.' not allowed for entity of type "'.$this->_type.'" by model class "'.get_class().'"');
+					$e = new ValidationException('Property '.$k.' not allowed for entity of type "'.$this->_type.'" by model class "'.get_class().'"');
+					$e->setEntity($this);
+					$e->setDB($this->db);
+					throw $e;
 				}
 			}
 		}

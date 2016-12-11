@@ -1,5 +1,6 @@
 <?php
 namespace FoxORM\SqlComposer;
+use BadMethodCallException;
 class Insert extends Base {
 	protected $ignore = false;
 	protected $select;
@@ -24,12 +25,12 @@ class Insert extends Base {
 	}
 	function values( array $values) {
 		if(isset($this->select))
-			throw new Exception("Cannot use 'INSERT INTO ... VALUES' when a SELECT is already set!");
+			throw new BadMethodCallException("Cannot use 'INSERT INTO ... VALUES' when a SELECT is already set!");
 		return $this->_add_params('values', $values);
 	}
 	function select($select = null,  array $params = null) {
 		if(isset($this->params['values']))
-			throw new Exception("Cannot use 'INSERT INTO ... SELECT' when values are already set!");
+			throw new BadMethodCallException("Cannot use 'INSERT INTO ... SELECT' when values are already set!");
 		if (!isset($this->select)) 
 			$this->select = new Select();
 		if (isset($select))

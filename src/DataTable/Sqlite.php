@@ -1,11 +1,11 @@
 <?php
 namespace FoxORM\DataTable;
-use FoxORM\Exception;
+use InvalidArgumentException;
 class Sqlite extends SQL{
 	protected $fullTextSearchLocale;
 	function setFullTextSearchLocale($locale){
 		if(!preg_match('/[a-z]{2,3}\_[A-Z]{2,3}$/',$locale))
-			throw new Exception('Locale "'.$locale.'" is not a valid locale name');
+			throw new InvalidArgumentException('Locale "'.$locale.'" is not a valid locale name');
 		$this->fullTextSearchLocale = $locale;
 	}
 	function fullTextSearch($text,$tokensNumber=30,$targetColumnIndex=-1,

@@ -1,5 +1,6 @@
 <?php
 namespace FoxORM\SqlComposer;
+use BadMethodCallException;
 class Replace extends Base {
 	protected $select;
 	function __construct($mainTable = null,$quoteCharacter = '"', $tablePrefix = '', $execCallback=null, $dbType=null){
@@ -17,12 +18,12 @@ class Replace extends Base {
 		return $this;
 	}
 	function values( array $values) {
-		if (isset($this->select)) throw new Exception("Cannot use 'REPLACE INTO ... VALUES' when a SELECT is already set!");
+		if (isset($this->select)) throw new BadMethodCallException("Cannot use 'REPLACE INTO ... VALUES' when a SELECT is already set!");
 
 		return $this->_add_params('values', $values);
 	}
 	function select($select = null,  array $params = null) {
-		if (isset($this->params['values'])) throw new Exception("Cannot use 'REPLACE INTO ... SELECT' when values are already set!");
+		if (isset($this->params['values'])) throw new BadMethodCallException("Cannot use 'REPLACE INTO ... SELECT' when values are already set!");
 
 		if (!isset($this->select)) {
 			$this->select = new Select();
