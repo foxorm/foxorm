@@ -78,6 +78,7 @@ use Iterator;
 use JsonSerializable;
 use Countable;
 use stdClass;
+use BadMethodCallException;
 class ArrayIterator implements ArrayAccess,Iterator,JsonSerializable,Countable{
 	private $__readingState;
 	private $__modified = false;
@@ -207,19 +208,72 @@ class ArrayIterator implements ArrayAccess,Iterator,JsonSerializable,Countable{
 		if(is_object($this->data)){
 			return call_user_func_array([$this->data,$f],$args);
 		}
-		throw new \BadMethodCallException('Call to undefined method '.get_class($this).'->'.$f);
+		throw new BadMethodCallException('Call to undefined method '.get_class($this).'->'.$f);
 	}
 }
 }
-#Exception.php
+#Exception/Exception.php
 
-namespace FoxORM {
-class Exception extends \Exception {}
+namespace FoxORM\Exception {
+use FoxORM\DataSource;
+class Exception extends \Exception {
+	protected $db;
+	function setDB(DataSource $db){
+		$this->db = $db;
+	}
+	function getDB(){
+		return $this->db;
+	}
+}
+}
+#Exception/QueryException.php
+
+namespace FoxORM\Exception {
+use FoxORM\Exception\Exception;
+class QueryException extends Exception {
+	protected $query;
+	protected $params;
+	function setQuery($q){
+		$this->query = $q;
+	}
+	function setParams($p){
+		$this->params = $p;
+	}
+	function getQuery(){
+		return $this->query;
+	}
+	function getParams(){
+		return $this->params;
+	}
+}
+}
+#Exception/SchemaException.php
+
+namespace FoxORM\Exception {
+use FoxORM\Exception\Exception;
+class SchemaException extends Exception {
+	
+}
+}
+#Exception/ValidationException.php
+
+namespace FoxORM\Exception {
+use FoxORM\Exception\Exception;
+class ValidationException extends Exception {
+	protected $entity;
+	function setEntity($row){
+		$this->entity = $row;
+	}
+	function getEntity(){
+		return $this->entity;
+	}
+}
 }
 #Bases.php
 
 namespace FoxORM {
 use FoxORM\Validate\Validate;
+use InvalidArgumentException;
 class Bases implements \ArrayAccess{
 	private $map;
 	private $mapObjects= [];
@@ -283,7 +337,7 @@ class Bases implements \ArrayAccess{
 	}
 	function offsetGet($k){
 		if(!isset($this->map[$k]))
-			throw new Exception('Try to access undefined DataSource layer "'.$k.'"');
+			throw new InvalidArgumentException('Try to access undefined DataSource layer "'.$k.'"');
 		if(!isset($this->mapObjects[$k])){
 			$this->mapObjects[$k] = $this->loadDataSource($this->map[$k]);
 			if($this->debug){
@@ -332,7 +386,7 @@ class Bases implements \ArrayAccess{
 			$config['type'] = $type;
 		}
 		else{
-			throw new \InvalidArgumentException('Undefined type of DataSource, please use atleast key type, dsn or offset 0');
+			throw new InvalidArgumentException('Undefined type of DataSource, please use atleast key type, dsn or offset 0');
 		}
 		
 		if(isset($config['modelClassPrefix'])){
@@ -681,6 +735,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 			
 			if($obj instanceof RulableInterface){
 				$this->trigger($type,'beforeValidate',$obj);
+				$obj->applyValidateProperties();
 				$obj->applyValidatePreFilters();
 				$obj->applyValidateRules();
 				$obj->applyValidateFilters();
@@ -1355,10 +1410,12 @@ namespace FoxORM\DataSource {
 use FoxORM\Std\Cast;
 use FoxORM\DataSource;
 use FoxORM\Helper\SqlLogger;
-use FoxORM\Exception;
+use FoxORM\Exception\QueryException;
+use FoxORM\Exception\SchemaException;
 use FoxORM\Entity\StateFollower;
 use FoxORM\Entity\Observer;
 use PDOException;
+use InvalidArgumentException;
 abstract class SQL extends DataSource{
 	protected $dsn;
 	protected $pdo;
@@ -1633,7 +1690,7 @@ abstract class SQL extends DataSource{
 	}
 	function setMaxIntBind( $max ){
 		if ( !is_integer( $max ) )
-			throw new \InvalidArgumentException( 'Parameter has to be integer.' );
+			throw new InvalidArgumentException( 'Parameter has to be integer.' );
 		$oldMax = $this->max;
 		$this->max = $max;
 		return $oldMax;
@@ -1922,8 +1979,9 @@ abstract class SQL extends DataSource{
 					break;
 		}
 		while($containA);
-		if(($c=substr_count($sql,'?'))!=($c2=count($binds)))
-			throw new Exception('ERROR: Query "'.$sql.'" need '.$c.' parameters, but request give '.$c2);
+		if(($c=substr_count($sql,'?'))!=($c2=count($binds))){
+			throw $this->queryException('ERROR: Query "'.$sql.'" need '.$c.' parameters, but request give '.$c2,$sql,$binds);
+		}
 		return [$sql,$binds];
 	}
 	
@@ -2114,7 +2172,7 @@ abstract class SQL extends DataSource{
 	
 	function check($struct){
 		if(!preg_match('/^[a-zA-Z0-9_-]+$/',$struct))
-			throw new \InvalidArgumentException('Table or Column name "'.$struct.'" does not conform to FoxORM security policies' );
+			throw new InvalidArgumentException('Table or Column name "'.$struct.'" does not conform to FoxORM security policies' );
 		return $struct;
 	}
 	function esc($esc){
@@ -2704,6 +2762,18 @@ abstract class SQL extends DataSource{
 		$this->performingSystemQuery = $tmp;
 		return $r;
 	}
+	protected function queryException($message,$q,$p=[]){
+		$e = new QueryException($message);
+		$e->setDB($this);
+		$e->setQuery($q);
+		$e->setParams($p);
+		return $e;
+	}
+	protected function schemaException($message){
+		$e = new SchemaException($message);
+		$e->setDB($this);
+		return $e;
+	}
 	
 	abstract protected function _getTablesQuery();
 	abstract protected function _getColumnsQuery($table);
@@ -2731,7 +2801,6 @@ abstract class SQL extends DataSource{
 #DataSource/Mysql.php
 
 namespace FoxORM\DataSource {
-use FoxORM\Exception;
 class Mysql extends SQL{
 	const C_DATATYPE_BOOL             = 0;
 	const C_DATATYPE_UINT32           = 1;
@@ -3173,7 +3242,7 @@ class Mysql extends SQL{
 		if(empty($columns)){
 			$columns = $this->autoFillTextColumns($type,$uniqTextKey);
 			if(empty($columns))
-				throw new Exception('Unable to find columns from "'.$table.'" to create FTS table for "'.$type.'"');
+				throw $this->schemaException('Unable to find columns from "'.$table.'" to create FTS table for "'.$type.'"');
 			$indexName = '_auto';
 			sort($columns);
 			if(isset($ftsMap[$indexName])&&$ftsMap[$indexName]!==$columns){
@@ -3196,7 +3265,7 @@ class Mysql extends SQL{
 		if(empty($columns)){
 			$columns = $this->autoFillTextColumns($type,$uniqTextKey);
 			if(empty($columns))
-				throw new Exception('Unable to find columns from "'.$table.'" to create FTS table "'.$ftsTable.'"');
+				throw $this->schemaException('Unable to find columns from "'.$table.'" to create FTS table "'.$ftsTable.'"');
 			$indexName = '_auto';
 			sort($columns);
 			if(isset($ftsMap[$indexName])&&$ftsMap[$indexName]!==$columns){
@@ -3673,7 +3742,7 @@ WHERE tc.table_name = ? AND tc.constraint_type = 'UNIQUE'",[$table]);
 		if(empty($columns)){
 			$columns = $this->autoFillTextColumns($type,$uniqTextKey);
 			if(empty($columns))
-				throw new Exception('Unable to find columns from "'.$table.'" to create FTS column "'.$col.'"');
+				throw $this->schemaException('Unable to find columns from "'.$table.'" to create FTS column "'.$col.'"');
 			sort($columns);
 			$indexName = '_auto_'.implode('_',$columns);
 			$vacuum = false;
@@ -3727,7 +3796,6 @@ WHERE tc.table_name = ? AND tc.constraint_type = 'UNIQUE'",[$table]);
 #DataSource/Sqlite.php
 
 namespace FoxORM\DataSource {
-use FoxORM\Exception;
 class Sqlite extends SQL{
 	const C_DATATYPE_INTEGER   = 0;
 	const C_DATATYPE_NUMERIC   = 1;
@@ -3783,10 +3851,10 @@ class Sqlite extends SQL{
 	function createDatabase($dbfile){
 		$dir = dirname($dbfile);
 		if(is_dir($dir)){
-			throw new Exception('Unable to write '.$dbfile.' db file');
+			throw $this->schemaException('Unable to write '.$dbfile.' db file');
 		}
 		elseif(!mkdir($dir,0777,true)){
-			throw new Exception('Unable to make '.dirname($dbfile).' directory');
+			throw $this->schemaException('Unable to make '.dirname($dbfile).' directory');
 		}
 	}
 	function scanType( $value, $flagSpecial = FALSE ){
@@ -4080,7 +4148,7 @@ class Sqlite extends SQL{
 					$columns[] = $col;
 			}
 			if(empty($columns))
-				throw new Exception('Unable to find columns from "'.$table.'" to create FTS table "'.$ftsTable.'"');
+				throw $this->schemaException('Unable to find columns from "'.$table.'" to create FTS table "'.$ftsTable.'"');
 		}
 		$ftsType = $type.$this->ftsTableSuffix;
 		$pTable = $this->prefixTable($type);
@@ -4170,7 +4238,8 @@ class Filesystem extends DataSource{
 #DataSource/Cubrid.php
 
 namespace FoxORM\DataSource {
-use FoxORM\Exception;
+use PDOException;
+use BadMethodCallException;
 class Cubrid extends SQL{
 	const C_DATATYPE_INTEGER          = 0;
 	const C_DATATYPE_BIGINT           = 1;
@@ -4210,7 +4279,7 @@ class Cubrid extends SQL{
 			$this->pdo->exec('SET TRACE ON');
 	}
 	function createDatabase($dbname){
-		throw new Exception('Unable to create database '.$dbname.'. CUBRID does not allow to create or drop a database from within the SQL query');
+		throw $this->schemaException('Unable to create database '.$dbname.'. CUBRID does not allow to create or drop a database from within the SQL query');
 	}
 	function scanType($value, $flagSpecial = false){
 		if ( is_null( $value ) )
@@ -4305,7 +4374,7 @@ class Cubrid extends SQL{
 		$sql  = "ALTER TABLE $table ADD CONSTRAINT FOREIGN KEY($column) REFERENCES $targetTable($targetColumn) ON DELETE $casc";
 		try {
 			$this->execute($sql);
-		} catch( \PDOException $e ) {
+		} catch( PDOException $e ) {
 			return false;
 		}
 		return true;
@@ -4364,7 +4433,7 @@ class Cubrid extends SQL{
 			$this->execute("ALTER TABLE $table ADD CONSTRAINT UNIQUE `$name` (" . implode( ',', $columns ) . ")");
 	}
 	protected function _getUniqueConstraints($type,$prefix=true){
-		throw new \Exception('method '.__FUNCTION__.' is not allready implemented in '.__CLASS__.', too busy for now, if you want to write it, feel free to do and send me the source');
+		throw new BadMethodCallException('method '.__FUNCTION__.' is not allready implemented in '.__CLASS__.', too busy for now, if you want to write it, feel free to do and send me the source');
 	}
 	protected function _addIndex( $type, $column, $name=null ){
 		if(!$name) $name = 'index_'.$property;
@@ -4374,7 +4443,7 @@ class Cubrid extends SQL{
 			$column = $this->esc( $column );
 			$this->execute("CREATE INDEX $name ON $table ($column) ");
 			return true;
-		} catch ( \PDOException $e ) {
+		} catch ( PDOException $e ) {
 			return false;
 		}
 	}
@@ -4632,6 +4701,7 @@ abstract class Where extends Base {
 #SqlComposer/Select.php
 
 namespace FoxORM\SqlComposer {
+use BadMethodCallException;
 class Select extends Where {
 	protected $distinct = false;
 	protected $group_by = [];
@@ -4752,7 +4822,7 @@ class Select extends Where {
 		return $this;
 	}
 	function havingIn($having,  array $params) {
-		if (!is_string($having)) throw new Exception("Method having_in must be called with a string as first argument.");
+		if (!is_string($having)) throw new BadMethodCallException("Method having_in must be called with a string as first argument.");
 		list($having, $params) = self::in($having, $params);
 		return $this->having($having, $params);
 	}
@@ -4824,7 +4894,7 @@ class Select extends Where {
 		return $this;
 	}
 	function unHavingIn($having,  array $params){
-		if (!is_string($having)) throw new Exception("Method having_in must be called with a string as first argument.");
+		if (!is_string($having)) throw new BadMethodCallException("Method having_in must be called with a string as first argument.");
 		list($having, $params) = self::in($having, $params);
 		return $this->unHaving($having, $params);
 	}
@@ -5447,6 +5517,7 @@ abstract class Base {
 #SqlComposer/Insert.php
 
 namespace FoxORM\SqlComposer {
+use BadMethodCallException;
 class Insert extends Base {
 	protected $ignore = false;
 	protected $select;
@@ -5471,12 +5542,12 @@ class Insert extends Base {
 	}
 	function values( array $values) {
 		if(isset($this->select))
-			throw new Exception("Cannot use 'INSERT INTO ... VALUES' when a SELECT is already set!");
+			throw new BadMethodCallException("Cannot use 'INSERT INTO ... VALUES' when a SELECT is already set!");
 		return $this->_add_params('values', $values);
 	}
 	function select($select = null,  array $params = null) {
 		if(isset($this->params['values']))
-			throw new Exception("Cannot use 'INSERT INTO ... SELECT' when values are already set!");
+			throw new BadMethodCallException("Cannot use 'INSERT INTO ... SELECT' when values are already set!");
 		if (!isset($this->select)) 
 			$this->select = new Select();
 		if (isset($select))
@@ -5561,6 +5632,7 @@ class Insert extends Base {
 #SqlComposer/Replace.php
 
 namespace FoxORM\SqlComposer {
+use BadMethodCallException;
 class Replace extends Base {
 	protected $select;
 	function __construct($mainTable = null,$quoteCharacter = '"', $tablePrefix = '', $execCallback=null, $dbType=null){
@@ -5578,12 +5650,12 @@ class Replace extends Base {
 		return $this;
 	}
 	function values( array $values) {
-		if (isset($this->select)) throw new Exception("Cannot use 'REPLACE INTO ... VALUES' when a SELECT is already set!");
+		if (isset($this->select)) throw new BadMethodCallException("Cannot use 'REPLACE INTO ... VALUES' when a SELECT is already set!");
 
 		return $this->_add_params('values', $values);
 	}
 	function select($select = null,  array $params = null) {
-		if (isset($this->params['values'])) throw new Exception("Cannot use 'REPLACE INTO ... SELECT' when values are already set!");
+		if (isset($this->params['values'])) throw new BadMethodCallException("Cannot use 'REPLACE INTO ... SELECT' when values are already set!");
 
 		if (!isset($this->select)) {
 			$this->select = new Select();
@@ -5657,6 +5729,7 @@ namespace FoxORM {
 use FoxORM\Helper\Pagination;
 use FoxORM\Std\Cast;
 use FoxORM\Std\ArrayIterator;
+use BadMethodCallException;
 abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSerializable{
 	private static $defaultEvents = [
 		'beforeRecursive',
@@ -5930,7 +6003,7 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 		if($this->tableWrapper&&method_exists($this->tableWrapper,$f)){
 			return call_user_func_array([$this->tableWrapper,$f],$args);
 		}
-		throw new \BadMethodCallException('Call to undefined method '.get_class($this).'->'.$f);
+		throw new BadMethodCallException('Call to undefined method '.get_class($this).'->'.$f);
 	}
 	
 	function jsonSerialize(){
@@ -6037,7 +6110,6 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 
 namespace FoxORM\DataTable {
 use FoxORM\Std\Cast;
-use FoxORM\Exception;
 use FoxORM\DataTable;
 use FoxORM\SqlComposer\Select;
 use FoxORM\SqlComposer\Insert;
@@ -6047,6 +6119,7 @@ use FoxORM\SqlComposer\Delete;
 use FoxORM\Entity\StateFollower;
 use FoxORM\DataSource;
 use FoxORM\DataSource\SQL as DataSourceSQL;
+use BadMethodCallException;
 class SQL extends DataTable{
 	private $stmt;
 	private $row;
@@ -6464,7 +6537,7 @@ class SQL extends DataTable{
 	
 	function trySelect($col, array $params = null){
 		if(!$this->isSimpleColumnName($col,true)){
-			throw new Exception("You can't make a trySelect on a non simpleColumnName: '$col'");
+			throw new BadMethodCallException("You can't make a trySelect on a non simpleColumnName: '$col'");
 		}
 		if($this->columnExists($col)){
 			$this->select->select($col, $params);
@@ -6480,7 +6553,7 @@ class SQL extends DataTable{
 			$where = $col.' = ?';
 		}
 		if(!$this->isSimpleColumnName($col,true)){
-			throw new Exception("You can't make a tryWhere on a non simpleColumnName: '$col'");
+			throw new BadMethodCallException("You can't make a tryWhere on a non simpleColumnName: '$col'");
 		}
 		if($this->columnExists($col)){
 			$this->select->where($where, $params);
@@ -7022,6 +7095,7 @@ class Mysql extends SQL{
 #DataTable/Pgsql.php
 
 namespace FoxORM\DataTable {
+use InvalidArgumentException;
 class Pgsql extends SQL{
 	protected $fulltextHeadline = [
 		'MaxFragments'=>2,
@@ -7036,7 +7110,7 @@ class Pgsql extends SQL{
 	protected $fullTextSearchLang;
 	function setFullTextSearchLang($lang){
 		if(!preg_match('/[a-z]/i',$lang))
-			throw new Exception('Lang "'.$lang.'" is not a valid lang name');
+			throw new InvalidArgumentException('Lang "'.$lang.'" is not a valid lang name');
 		$this->fullTextSearchLang = $lang;
 	}
 	function setFulltextHeadline($config){
@@ -7096,12 +7170,12 @@ class Pgsql extends SQL{
 #DataTable/Sqlite.php
 
 namespace FoxORM\DataTable {
-use FoxORM\Exception;
+use InvalidArgumentException;
 class Sqlite extends SQL{
 	protected $fullTextSearchLocale;
 	function setFullTextSearchLocale($locale){
 		if(!preg_match('/[a-z]{2,3}\_[A-Z]{2,3}$/',$locale))
-			throw new Exception('Locale "'.$locale.'" is not a valid locale name');
+			throw new InvalidArgumentException('Locale "'.$locale.'" is not a valid locale name');
 		$this->fullTextSearchLocale = $locale;
 	}
 	function fullTextSearch($text,$tokensNumber=30,$targetColumnIndex=-1,
@@ -7253,6 +7327,7 @@ class Cubrid extends SQL{
 namespace FoxORM\Entity {
 use FoxORM\DataSource;
 use FoxORM\DataTable;
+use BadMethodCallException;
 class TableWrapper implements \ArrayAccess,\Iterator,\Countable,\JsonSerializable{
 	protected $type;
 	protected $db;
@@ -7270,7 +7345,7 @@ class TableWrapper implements \ArrayAccess,\Iterator,\Countable,\JsonSerializabl
 		if(method_exists($this->dataTable,$f)){
 			return call_user_func_array([$this->dataTable,$f],$args);
 		}
-		throw new \BadMethodCallException('Call to undefined method '.get_class($this).'->'.$f);
+		throw new BadMethodCallException('Call to undefined method '.get_class($this).'->'.$f);
 	}
 	function offsetExists($id){
 		return $this->dataTable->offsetExists($id);
@@ -7831,6 +7906,7 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 
 namespace FoxORM\Entity {
 interface RulableInterface{
+	function applyValidateProperties();
 	function applyValidatePreFilters();
 	function applyValidateRules();
 	function applyValidateFilters();
@@ -7842,10 +7918,29 @@ interface RulableInterface{
 #Entity/RulableModel.php
 
 namespace FoxORM\Entity {
+use FoxORM\Exception\ValidationException;
 class RulableModel extends Model implements RulableInterface {
 	protected $validatePreFilters = [];
 	protected $validateRules = [];
 	protected $validateFilters = [];
+	protected $validateProperties = [];
+	protected $validatePropertiesSilent = true;
+	function applyValidateProperties(){
+		if($this->validateProperties===false) return;
+		foreach(array_keys($this->__data) as $k){
+			if(!in_array($k,$this->validateProperties)){
+				if($this->validatePropertiesSilent){
+					$this->__unset($k);
+				}
+				else{
+					$e = new ValidationException('Property '.$k.' not allowed for entity of type "'.$this->_type.'" by model class "'.get_class().'"');
+					$e->setEntity($this);
+					$e->setDB($this->db);
+					throw $e;
+				}
+			}
+		}
+	}
 	function applyValidatePreFilters(){
 		$this
 			->getValidate()
@@ -8108,11 +8203,6 @@ class SqlLogger {
 	}
 }
 }
-#Validation/Exception.php
-
-namespace FoxORM\Validation {
-class Exception extends \Exception {}
-}
 #MainDb.php
 
 namespace FoxORM {
@@ -8142,6 +8232,7 @@ class MainDb implements \ArrayAccess {
 
 namespace FoxORM {
 use RedCat\Strategy\Di;
+use BadMethodCallException;
 class F{
 	protected static $bases;
 	protected static $currentDataSource;
@@ -8185,7 +8276,7 @@ class F{
 	static function __callStatic($f,$args){
 		self::_init();
 		if(!isset(self::$currentDataSource))
-			throw new Exception('Use '.__CLASS__.'::setup() first');
+			throw new BadMethodCallException('Use '.__CLASS__.'::setup() first');
 		return call_user_func_array([self::$currentDataSource,$f],$args);
 	}
 	
