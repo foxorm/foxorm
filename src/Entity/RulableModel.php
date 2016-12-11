@@ -25,4 +25,6 @@ class RulableModel extends Model implements RulableInterface {
 	function getValidate(){
 		return $this->db->getValidateService();
 	}
+	function beforeValidate(){}
+	function afterValidate(){}
 }

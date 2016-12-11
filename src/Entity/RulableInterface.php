@@ -5,4 +5,6 @@ interface RulableInterface{
 	function applyValidateRules();
 	function applyValidateFilters();
 	function getValidate();
+	function beforeValidate();
+	function afterValidate();
 }
