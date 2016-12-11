@@ -11,7 +11,10 @@ $files = [
 	'Std/CaseConvert.php',
 	'Std/ArrayIterator.php',
 	
-	'Exception.php',
+	'Exception/Exception.php',
+	'Exception/QueryException.php',
+	'Exception/SchemaException.php',
+	'Exception/ValidationException.php',
 	'Bases.php',
 	
 	
@@ -51,8 +54,6 @@ $files = [
 	
 	'Helper/Pagination.php',
 	'Helper/SqlLogger.php',
-	
-	'Validation/Exception.php',
 	
 	'MainDb.php',
 	'F.php',
