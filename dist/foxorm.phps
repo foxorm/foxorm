@@ -7835,6 +7835,8 @@ interface RulableInterface{
 	function applyValidateRules();
 	function applyValidateFilters();
 	function getValidate();
+	function beforeValidate();
+	function afterValidate();
 }
 }
 #Entity/RulableModel.php
@@ -7865,6 +7867,8 @@ class RulableModel extends Model implements RulableInterface {
 	function getValidate(){
 		return $this->db->getValidateService();
 	}
+	function beforeValidate(){}
+	function afterValidate(){}
 }
 }
 #Helper/Pagination.php
