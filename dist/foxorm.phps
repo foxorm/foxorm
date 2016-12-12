@@ -5785,6 +5785,9 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 		foreach(self::$defaultEvents as $event)
 			$this->on($event);
 	}
+	function getTableName(){
+		return $this->name;
+	}
 	function getPrimaryKey(){
 		return $this->dataSource->getTablePrimaryKey($this->name);
 	}
