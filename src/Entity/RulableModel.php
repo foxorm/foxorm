@@ -5,7 +5,7 @@ class RulableModel extends Model implements RulableInterface {
 	protected $validatePreFilters = [];
 	protected $validateRules = [];
 	protected $validateFilters = [];
-	protected $validateProperties = [];
+	protected $validateProperties = false;
 	protected $validatePropertiesSilent = true;
 	function applyValidateProperties(){
 		if($this->validateProperties===false) return;
