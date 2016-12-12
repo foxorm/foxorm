@@ -56,8 +56,19 @@ class SQL extends DataTable{
 	function getCol(){
 		return $this->getClean(__FUNCTION__);
 	}
-	function getCell(){
-		return $this->getClean(__FUNCTION__);
+	function getCell($column=null,$selectMain=null){
+		$o = $this;
+		if($column){
+			$o = clone $o;
+			$o->unSelect();
+			if($selectMain){
+				$o->select($column);
+			}
+			else{
+				$o->selectMain($column);
+			}
+		}
+		return $o->getClean(__FUNCTION__);
 	}
 	
 	function tryGetAll(){
