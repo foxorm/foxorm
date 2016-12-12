@@ -4772,6 +4772,15 @@ class Select extends Where {
 		$this->_add_params('select', $params);
 		return $this;
 	}
+	function selectMain($select,  array $params = null){
+		foreach((array)$select as $s){
+			if(!empty($params)||!in_array($s,$this->columns)){
+				$this->columns[] = $this->formatColumnName($s);
+			}
+		}
+		$this->_add_params('select', $params);
+		return $this;
+	}
 	function distinct($distinct = true) {
 		$this->distinct = (bool)$distinct;
 		return $this;
@@ -6762,6 +6771,10 @@ class SQL extends DataTable{
 	}
 	function compose_select($select, array $params = null){
 		$this->select->select($select, $params);
+		return $this;
+	}
+	function compose_selectMain($select, array $params = null){
+		$this->select->selectMain($select, $params);
 		return $this;
 	}
 	function compose_distinct($distinct = true){

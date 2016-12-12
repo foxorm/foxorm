@@ -655,6 +655,10 @@ class SQL extends DataTable{
 		$this->select->select($select, $params);
 		return $this;
 	}
+	function compose_selectMain($select, array $params = null){
+		$this->select->selectMain($select, $params);
+		return $this;
+	}
 	function compose_distinct($distinct = true){
 		$this->select->distinct($distinct);
 		return $this;
