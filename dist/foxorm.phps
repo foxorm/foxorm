@@ -799,6 +799,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 			if($relation){
 				switch($relation){
 					case 'oneByPK':
+						if(empty($v)) continue 2;
 						$pk = $this[$t]->getPrimaryKey();
 						$rc = $t.'_'.$pk;
 						$addFK = [$type,$t,$rc,$pk,$xclusive];
@@ -807,6 +808,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 						$properties[$k] = $v;
 					break;
 					case 'one':
+						if(empty($v)) continue 2;
 						if(is_scalar($v))
 							$v = $this->scalarToArray($v,$k);
 						if(is_array($v))
@@ -837,6 +839,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 						}
 						$v->__readingState(true);
 						foreach($v as $mk=>$val){
+							if(empty($val)) continue;
 							if(is_scalar($val))
 								$v[$mk] = $val = $this->scalarToArray($val,$k);
 							if(is_array($val))
@@ -871,6 +874,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 						$obj->{'_linkMany_'.$inter} = [];
 						$v->__readingState(true);
 						foreach($v as $kM2m=>$val){
+							if(empty($val)) continue;
 							if(is_scalar($val))
 								$v[$kM2m] = $val = $this->scalarToArray($val,$k);
 							if(is_array($val))
