@@ -124,12 +124,15 @@ class ArrayIterator implements ArrayAccess,Iterator,JsonSerializable,Countable{
 		}
 	}
 	function next(){
-		if($this->data instanceof Iterator){
-			return $this->data->next();
+		do{
+			if($this->data instanceof Iterator){
+				$this->data->next();
+			}
+			else{
+				next($this->data);
+			}
 		}
-		else{
-			return next($this->data);
-		}
+		while($this->current()===null&&$this->valid());
 	}
 	function valid(){
 		if($this->data instanceof Iterator){
@@ -185,7 +188,7 @@ class ArrayIterator implements ArrayAccess,Iterator,JsonSerializable,Countable{
 	
 	function jsonSerialize(){
 		$o = new stdClass();
-		foreach($this->data as $k=>$v){
+		foreach($this as $k=>$v){
 			$o->$k = $v;
 		}
 		return $o;
