@@ -3,6 +3,7 @@ namespace FoxORM\Entity;
 use FoxORM\Std\ScalarInterface;
 use FoxORM\Std\Cast;
 use FoxORM\DataSource;
+use FoxORM\Entity\StateFollower;
 class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable{
 	private $__readingState;
 	private $__data = [];
@@ -209,7 +210,24 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 	function getDatabase(){
 		return $this->db;
 	}
-	function __readingState($b){
+	function __readingState($b,$recursive=false){
+		if($recursive){			
+			foreach($this->__data as $k=>$v){
+				if(is_object($v)){
+					if($v instanceof StateFollower){
+						$v->__readingState($b,true);
+					}
+					else if($v instanceof ArrayIterator||is_array($v)){
+						foreach($v as $val){
+							if($val instanceof StateFollower){
+								$val->__readingState($b,true);
+							}
+						}
+					}
+				}
+			}
+		}
+		
 		$this->__readingState = (bool)$b;
 	}
 	function setArray(array $data){
