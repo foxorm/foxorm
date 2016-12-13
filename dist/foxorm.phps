@@ -7969,10 +7969,12 @@ class RulableModel extends Model implements RulableInterface {
 		}
 	}
 	function applyValidatePreFilters(){
+		$this->__readingState(true);
 		$this
 			->getValidate()
 			->createFilter($this->validatePreFilters)
 			->filterByReference($this);
+		$this->__readingState(false);
 	}
 	function applyValidateRules(){
 		$this
@@ -7981,10 +7983,12 @@ class RulableModel extends Model implements RulableInterface {
 			->assert($this);
 	}
 	function applyValidateFilters(){
+		$this->__readingState(true);
 		$this
 			->getValidate()
 			->createFilter($this->validateFilters)
 			->filterByReference($this);
+		$this->__readingState(false);
 	}
 	function getValidate(){
 		return $this->db->getValidateService();
