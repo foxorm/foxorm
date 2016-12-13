@@ -7526,6 +7526,7 @@ namespace FoxORM\Entity {
 use FoxORM\Std\ScalarInterface;
 use FoxORM\Std\Cast;
 use FoxORM\DataSource;
+use FoxORM\Entity\StateFollower;
 class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable{
 	private $__readingState;
 	private $__data = [];
@@ -7732,7 +7733,7 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 	function getDatabase(){
 		return $this->db;
 	}
-	function __readingState($b){
+	function __readingState($b,$recursive=false){
 		$this->__readingState = (bool)$b;
 	}
 	function setArray(array $data){
@@ -7946,6 +7947,7 @@ interface RulableInterface{
 
 namespace FoxORM\Entity {
 use FoxORM\Exception\ValidationException;
+use FoxORM\Std\ArrayIterator;
 class RulableModel extends Model implements RulableInterface {
 	protected $validatePreFilters = [];
 	protected $validateRules = [];
@@ -7969,12 +7971,7 @@ class RulableModel extends Model implements RulableInterface {
 		}
 	}
 	function applyValidatePreFilters(){
-		$this->__readingState(true);
-		$this
-			->getValidate()
-			->createFilter($this->validatePreFilters)
-			->filterByReference($this);
-		$this->__readingState(false);
+		$this->_applyFilters($this->validatePreFilters);
 	}
 	function applyValidateRules(){
 		$this
@@ -7983,18 +7980,32 @@ class RulableModel extends Model implements RulableInterface {
 			->assert($this);
 	}
 	function applyValidateFilters(){
-		$this->__readingState(true);
-		$this
-			->getValidate()
-			->createFilter($this->validateFilters)
-			->filterByReference($this);
-		$this->__readingState(false);
+		$this->_applyFilters($this->validateFilters);
 	}
 	function getValidate(){
 		return $this->db->getValidateService();
 	}
 	function beforeValidate(){}
 	function afterValidate(){}
+	
+	protected function _applyFilters(array $filters){
+		$this->__readingState(true);
+		
+		$properties = $this->getArray();
+		
+		$filteredProperties = $this
+			->getValidate()
+			->createFilter($filters)
+			->filter($properties);
+		
+		foreach($filteredProperties as $k=>$v){
+			if($properties[$k]!==$v){
+				$this->$k = $v;
+			}
+		}
+		
+		$this->__readingState(false);
+	}
 }
 }
 #Helper/Pagination.php
