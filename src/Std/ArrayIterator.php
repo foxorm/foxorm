@@ -27,6 +27,18 @@ class ArrayIterator implements ArrayAccess,Iterator,JsonSerializable,Countable{
 	function __unset($k){
 		unset($this->data[$k]);
 	}
+	
+	protected function iteratorSkipNull(){
+		while($this->current()===null&&$this->valid()){
+			if($this->data instanceof Iterator){
+				$this->data->next();
+			}
+			else{
+				next($this->data);
+			}
+		}
+	}
+	
 	function rewind(){
 		if($this->data instanceof Iterator){
 			$this->data->rewind();
@@ -34,6 +46,7 @@ class ArrayIterator implements ArrayAccess,Iterator,JsonSerializable,Countable{
 		else{
 			reset($this->data);
 		}
+		$this->iteratorSkipNull();
 	}
 	function current(){
 		if($this->data instanceof Iterator){
@@ -52,15 +65,13 @@ class ArrayIterator implements ArrayAccess,Iterator,JsonSerializable,Countable{
 		}
 	}
 	function next(){
-		do{
-			if($this->data instanceof Iterator){
-				$this->data->next();
-			}
-			else{
-				next($this->data);
-			}
+		if($this->data instanceof Iterator){
+			$this->data->next();
 		}
-		while($this->current()===null&&$this->valid());
+		else{
+			next($this->data);
+		}
+		$this->iteratorSkipNull();
 	}
 	function valid(){
 		if($this->data instanceof Iterator){
