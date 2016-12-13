@@ -5,5 +5,5 @@ interface StateFollower extends \Iterator{
 	function __get($k);
 	function __isset($k);
 	function __unset($k);
-	function __readingState($b,$recursive=false);
+	function __readingState($b);
 }

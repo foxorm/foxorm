@@ -211,23 +211,6 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 		return $this->db;
 	}
 	function __readingState($b,$recursive=false){
-		if($recursive){			
-			foreach($this->__data as $k=>$v){
-				if(is_object($v)){
-					if($v instanceof StateFollower){
-						$v->__readingState($b,true);
-					}
-					else if($v instanceof ArrayIterator||is_array($v)){
-						foreach($v as $val){
-							if($val instanceof StateFollower){
-								$val->__readingState($b,true);
-							}
-						}
-					}
-				}
-			}
-		}
-		
 		$this->__readingState = (bool)$b;
 	}
 	function setArray(array $data){
