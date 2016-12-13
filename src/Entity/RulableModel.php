@@ -1,6 +1,7 @@
 <?php
 namespace FoxORM\Entity;
 use FoxORM\Exception\ValidationException;
+use FoxORM\Std\ArrayIterator;
 class RulableModel extends Model implements RulableInterface {
 	protected $validatePreFilters = [];
 	protected $validateRules = [];
@@ -24,12 +25,12 @@ class RulableModel extends Model implements RulableInterface {
 		}
 	}
 	function applyValidatePreFilters(){
-		$this->__readingState(true);
+		$this->__readingState(true,true);
 		$this
 			->getValidate()
 			->createFilter($this->validatePreFilters)
 			->filterByReference($this);
-		$this->__readingState(false);
+		$this->__readingState(false,true);
 	}
 	function applyValidateRules(){
 		$this
@@ -38,12 +39,12 @@ class RulableModel extends Model implements RulableInterface {
 			->assert($this);
 	}
 	function applyValidateFilters(){
-		$this->__readingState(true);
+		$this->__readingState(true,true);
 		$this
 			->getValidate()
 			->createFilter($this->validateFilters)
 			->filterByReference($this);
-		$this->__readingState(false);
+		$this->__readingState(false,true);
 	}
 	function getValidate(){
 		return $this->db->getValidateService();
