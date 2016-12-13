@@ -25,12 +25,7 @@ class RulableModel extends Model implements RulableInterface {
 		}
 	}
 	function applyValidatePreFilters(){
-		$this->__readingState(true);
-		$this
-			->getValidate()
-			->createFilter($this->validatePreFilters)
-			->filterByReference($this);
-		$this->__readingState(false);
+		$this->_applyFilters($this->validatePreFilters);
 	}
 	function applyValidateRules(){
 		$this
@@ -39,16 +34,30 @@ class RulableModel extends Model implements RulableInterface {
 			->assert($this);
 	}
 	function applyValidateFilters(){
-		$this->__readingState(true);
-		$this
-			->getValidate()
-			->createFilter($this->validateFilters)
-			->filterByReference($this);
-		$this->__readingState(false);
+		$this->_applyFilters($this->validateFilters);
 	}
 	function getValidate(){
 		return $this->db->getValidateService();
 	}
 	function beforeValidate(){}
 	function afterValidate(){}
+	
+	protected function _applyFilters(array $filters){
+		$this->__readingState(true);
+		
+		$properties = $this->getArray();
+		
+		$filteredProperties = $this
+			->getValidate()
+			->createFilter($filters)
+			->filter($properties);
+		
+		foreach($filteredProperties as $k=>$v){
+			if($properties[$k]!==$v){
+				$this->$k = $v;
+			}
+		}
+		
+		$this->__readingState(false);
+	}
 }
