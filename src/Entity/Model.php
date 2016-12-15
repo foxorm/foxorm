@@ -189,6 +189,10 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 		return key($this->__cursor)!==null;
 	}
 	
+	function keys(){
+		return array_keys($this->__cursor);
+	}
+	
 	function offsetSet($k,$v){
 		$this->__set($k,$v);
 	}
