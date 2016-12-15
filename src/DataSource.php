@@ -245,6 +245,9 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 	
 	function putRow($type,$obj,$id=null,$primaryKey='id',$uniqTextKey='uniq'){
 		
+		if(isset($obj->_handling)&&$obj->_handling) return;
+		$obj->_handling = true;
+		
 		$obj->_type = $type;
 		$properties = [];
 		$oneNew = [];
@@ -568,6 +571,9 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		}
 		
 		$this->trigger($type,'afterRecursive',$obj,'recursive',false);
+		
+		unset($obj->_handling);
+		
 		return $r?$r:$obj->$primaryKey;
 	}
 	
