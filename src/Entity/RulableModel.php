@@ -10,7 +10,7 @@ class RulableModel extends Model implements RulableInterface {
 	protected $validatePropertiesSilent = true;
 	function applyValidateProperties(){
 		if($this->validateProperties===false) return;
-		foreach(array_keys($this->__data) as $k){
+		foreach($this->keys() as $k){
 			if(!in_array($k,$this->validateProperties)){
 				if($this->validatePropertiesSilent){
 					$this->__unset($k);
