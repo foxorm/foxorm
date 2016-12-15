@@ -961,6 +961,7 @@ abstract class SQL extends DataSource{
 			$joinQuery .= "OR ( `$type2`.{$pk2E} = `$tbj`.`{$type2}_{$pk2}` AND `$tbj`.`{$type2}{$t2}_{$pk2}` = ? )";
 			$joinParams[] = $obj->$pk1;
 		}
+		$table->unSelect('*')->selectMain('*');
 		$table->joinOn($joinQuery,$joinParams);
 		return $table;
 	}
