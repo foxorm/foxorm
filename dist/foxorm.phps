@@ -753,7 +753,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 				$obj->applyValidateRules();
 				$obj->applyValidateFilters();
 				$this->trigger($type,'afterValidate',$obj);
-				if($update&&count($obj)<2) return;
+				if($update&&count($obj->keys())<2) return;
 			}
 			
 			$this->trigger($type,'beforePut',$obj);
