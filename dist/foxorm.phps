@@ -716,7 +716,6 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		$refsOne = [];
 		
 		$manyIteratorByK = [];
-		
 		if(isset($id)){
 			if($obj instanceof StateFollower) $obj->__readingState(true);
 			if($uniqTextKey&&!Cast::isInt($id))
@@ -754,6 +753,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 				$obj->applyValidateRules();
 				$obj->applyValidateFilters();
 				$this->trigger($type,'afterValidate',$obj);
+				if($update&&count($obj)<2) return;
 			}
 			
 			$this->trigger($type,'beforePut',$obj);
@@ -935,7 +935,6 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		foreach($refsOne as $rc=>$rf){
 			$obj->$rc = $properties[$rc] = $rf;
 		}
-		
 		
 		if(!$update||!isset($obj->_modified)||$obj->_modified!==false){
 			$modified = true;
@@ -7730,6 +7729,10 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 		return key($this->__cursor)!==null;
 	}
 	
+	function keys(){
+		return array_keys($this->__cursor);
+	}
+	
 	function offsetSet($k,$v){
 		$this->__set($k,$v);
 	}
@@ -7974,7 +7977,9 @@ class RulableModel extends Model implements RulableInterface {
 	protected $validatePropertiesSilent = true;
 	function applyValidateProperties(){
 		if($this->validateProperties===false) return;
-		foreach(array_keys($this->__data) as $k){
+		$pk = $this->_table->getPrimaryKey();
+		foreach($this->keys() as $k){
+			if($k==$pk) continue;
 			if(!in_array($k,$this->validateProperties)){
 				if($this->validatePropertiesSilent){
 					$this->__unset($k);
