@@ -258,7 +258,6 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		$refsOne = [];
 		
 		$manyIteratorByK = [];
-		
 		if(isset($id)){
 			if($obj instanceof StateFollower) $obj->__readingState(true);
 			if($uniqTextKey&&!Cast::isInt($id))
@@ -477,7 +476,6 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		foreach($refsOne as $rc=>$rf){
 			$obj->$rc = $properties[$rc] = $rf;
 		}
-		
 		
 		if(!$update||!isset($obj->_modified)||$obj->_modified!==false){
 			$modified = true;
