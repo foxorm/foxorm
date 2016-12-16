@@ -373,7 +373,8 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 						if(is_array($v))
 							$v = $this->arrayToEntity($v,$k);
 						
-						$t = $k?$k:$this->findEntityTable($v);
+						$t = isset($v->_type)?$v->_type:$k;
+						$tAlias = $k?$k:$t;
 						
 						$pk = $this[$t]->getPrimaryKey();
 						if(!is_null($v)){
@@ -384,7 +385,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 								$oneNew[$t][] = $v;
 							}
 						}
-						$rc = $k.'_'.$pk;
+						$rc = $tAlias.'_'.$pk;
 						$refsOne[$rc] = &$v->$pk;
 						
 						$addFK = [$type,$t,$rc,$pk,$xclusive];
