@@ -916,18 +916,25 @@ abstract class SQL extends DataSource{
 	}
 	
 	function many2one($obj,$type){
+		$tb = $this->findEntityTable($obj);
+		
+		$colType = $type;
+		if(!$this[$type]->exists()){
+			$type = $this->inferFetchType($tb,$type);
+		}
+		
 		$table = clone $this[$type];
 		$typeE = $this->escTable($type);
 		$pk = $table->getPrimaryKey();
-		$pko = $type.'_'.$pk;
+		$pko = $colType.'_'.$pk;
 		$column = $this->esc($pk);
 		$table->where($typeE.'.'.$column.' = ?',[$obj->$pko]);
 		return $table->getRow();
 	}
 	function one2many($obj,$type){
+		$tb = $this->findEntityTable($obj);
 		$table = clone $this[$type];
 		$typeE = $this->escTable($type);
-		$tb = $this->findEntityTable($obj);
 		$pko = $this[$tb]->getPrimaryKey();
 		$column = $this->esc($tb.'_'.$pko);
 		$table->where($typeE.'.'.$column.' = ?',[$obj->$pko]);
@@ -1377,6 +1384,7 @@ abstract class SQL extends DataSource{
 			if($key['from']===$field)
 				return $key['table'];
 		}
+		return $type2;
 	}
 	
 	abstract protected function _getTablesQuery();
