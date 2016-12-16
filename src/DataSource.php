@@ -440,7 +440,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 							if(is_array($val))
 								$v[$kM2m] = $val = $this->arrayToEntity($val,$k);
 							
-							$t = $k?$k:$this->findEntityTable($v);
+							$t = isset($val->_type)?$val->_type:$k;
 							
 							$pk = $this[$t]->getPrimaryKey();
 							$rc2 = $k.$typeColSuffix.'_'.$pk;
