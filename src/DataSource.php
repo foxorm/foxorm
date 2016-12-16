@@ -352,6 +352,9 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 				$relation = 'one';
 			}
 			elseif($t = $this->isPrimaryKeyOf($k)){
+				if(isset($obj->{'_one_'.$t})){
+					continue;
+				}
 				$relation = 'oneByPK';
 			}
 			
