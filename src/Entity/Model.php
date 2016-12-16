@@ -68,8 +68,10 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 					$id = isset($v[$pk])?$v[$pk]:null;
 				}
 				if($id){
-					$k = $relationKey.'_'.$pk;
-					$v = $id;
+					$k2 = $relationKey.'_'.$pk;
+					$v2 = $id;
+					$this->__cursor[$k2] = &$this->__data[$k2];
+					$this->__data[$k2] = $v2;
 				}
 			}
 		}
