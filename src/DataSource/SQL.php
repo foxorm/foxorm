@@ -1371,7 +1371,7 @@ abstract class SQL extends DataSource{
 	
 	function inferFetchType($type, $type2){
 		$pk = $this[$type2]->getPrimaryKey();
-		$field = $property.'_'.$pk;
+		$field = $type2.'_'.$pk;
 		$keys = $this->getKeyMapForType($type);
 		foreach($keys as $key){
 			if($key['from']===$field)
