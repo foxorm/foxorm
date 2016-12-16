@@ -398,7 +398,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 						}
 						$v->__readingState(true);
 						foreach($v as $mk=>$val){
-							if(empty($val)) continue;
+							if(empty($val)&&(is_scalar($val)||is_null($val))) continue;
 							if(is_scalar($val))
 								$v[$mk] = $val = $this->scalarToArray($val,$k);
 							if(is_array($val))
@@ -433,7 +433,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 						$obj->{'_linkMany_'.$inter} = [];
 						$v->__readingState(true);
 						foreach($v as $kM2m=>$val){
-							if(empty($val)) continue;
+							if(empty($val)&&(is_scalar($val)||is_null($val))) continue;
 							if(is_scalar($val))
 								$v[$kM2m] = $val = $this->scalarToArray($val,$k);
 							if(is_array($val))
