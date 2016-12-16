@@ -1369,6 +1369,16 @@ abstract class SQL extends DataSource{
 		return $e;
 	}
 	
+	function inferFetchType($type, $type2){
+		$pk = $this[$type2]->getPrimaryKey();
+		$field = $property.'_'.$pk;
+		$keys = $this->getKeyMapForType($type);
+		foreach($keys as $key){
+			if($key['from']===$field)
+				return $key['table'];
+		}
+	}
+	
 	abstract protected function _getTablesQuery();
 	abstract protected function _getColumnsQuery($table);
 	abstract protected function _createTableQuery($table,$pk='id');
