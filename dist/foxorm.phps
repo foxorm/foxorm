@@ -831,7 +831,8 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 						if(is_array($v))
 							$v = $this->arrayToEntity($v,$k);
 						
-						$t = $k?$k:$this->findEntityTable($v);
+						$t = isset($v->_type)?$v->_type:$k;
+						$tAlias = $k?$k:$t;
 						
 						$pk = $this[$t]->getPrimaryKey();
 						if(!is_null($v)){
@@ -842,7 +843,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 								$oneNew[$t][] = $v;
 							}
 						}
-						$rc = $k.'_'.$pk;
+						$rc = $tAlias.'_'.$pk;
 						$refsOne[$rc] = &$v->$pk;
 						
 						$addFK = [$type,$t,$rc,$pk,$xclusive];
@@ -862,7 +863,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 							if(is_array($val))
 								$v[$mk] = $val = $this->arrayToEntity($val,$k);
 							
-							$t = $k?$k:$this->findEntityTable($v);
+							$t = isset($val->_type)?$val->_type:$k;
 							
 							$rc = $type.'_'.$primaryKey;
 							$one2manyNew[$t][] = [$val,$rc];
@@ -897,7 +898,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 							if(is_array($val))
 								$v[$kM2m] = $val = $this->arrayToEntity($val,$k);
 							
-							$t = $k?$k:$this->findEntityTable($v);
+							$t = isset($val->_type)?$val->_type:$k;
 							
 							$pk = $this[$t]->getPrimaryKey();
 							$rc2 = $k.$typeColSuffix.'_'.$pk;
@@ -2346,18 +2347,25 @@ abstract class SQL extends DataSource{
 	}
 	
 	function many2one($obj,$type){
+		$tb = $this->findEntityTable($obj);
+		
+		$colType = $type;
+		if(!$this[$type]->exists()){
+			$type = $this->inferFetchType($tb,$type);
+		}
+		
 		$table = clone $this[$type];
 		$typeE = $this->escTable($type);
 		$pk = $table->getPrimaryKey();
-		$pko = $type.'_'.$pk;
+		$pko = $colType.'_'.$pk;
 		$column = $this->esc($pk);
 		$table->where($typeE.'.'.$column.' = ?',[$obj->$pko]);
 		return $table->getRow();
 	}
 	function one2many($obj,$type){
+		$tb = $this->findEntityTable($obj);
 		$table = clone $this[$type];
 		$typeE = $this->escTable($type);
-		$tb = $this->findEntityTable($obj);
 		$pko = $this[$tb]->getPrimaryKey();
 		$column = $this->esc($tb.'_'.$pko);
 		$table->where($typeE.'.'.$column.' = ?',[$obj->$pko]);
@@ -2797,6 +2805,17 @@ abstract class SQL extends DataSource{
 		$e = new SchemaException($message);
 		$e->setDB($this);
 		return $e;
+	}
+	
+	function inferFetchType($type, $type2){
+		$pk = $this[$type2]->getPrimaryKey();
+		$field = $type2.'_'.$pk;
+		$keys = $this->getKeyMapForType($type);
+		foreach($keys as $key){
+			if($key['from']===$field)
+				return $key['table'];
+		}
+		return $type2;
 	}
 	
 	abstract protected function _getTablesQuery();
@@ -7608,7 +7627,12 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 				$v = Cast::scalar($v);
 			}
 			else{
-				$id = is_object($v)?$v->$pk:$v[$pk];
+				if(is_object($v)){
+					$id = isset($v->$pk)?$v->$pk:null;
+				}
+				else{
+					$id = isset($v[$pk])?$v[$pk]:null;
+				}
 				if($id){
 					$k = $relationKey.'_'.$pk;
 					$v = $id;
