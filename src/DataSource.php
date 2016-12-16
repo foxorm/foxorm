@@ -405,7 +405,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 							if(is_array($val))
 								$v[$mk] = $val = $this->arrayToEntity($val,$k);
 							
-							$t = $k?$k:$this->findEntityTable($v);
+							$t = isset($val->_type)?$val->_type:$k;
 							
 							$rc = $type.'_'.$primaryKey;
 							$one2manyNew[$t][] = [$val,$rc];
