@@ -356,9 +356,9 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 			}
 			
 			if($relation){
+				if(empty($v)) continue;
 				switch($relation){
 					case 'oneByPK':
-						if(empty($v)) continue 2;
 						$pk = $this[$t]->getPrimaryKey();
 						$rc = $t.'_'.$pk;
 						$addFK = [$type,$t,$rc,$pk,$xclusive];
@@ -367,7 +367,6 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 						$properties[$k] = $v;
 					break;
 					case 'one':
-						if(empty($v)) continue 2;
 						if(is_scalar($v))
 							$v = $this->scalarToArray($v,$k);
 						if(is_array($v))
@@ -433,8 +432,10 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 						$rc = $type.'_'.$primaryKey;
 						$obj->{'_linkMany_'.$inter} = [];
 						$v->__readingState(true);
+						$notEmpty = false;
 						foreach($v as $kM2m=>$val){
 							if(empty($val)&&(is_scalar($val)||is_null($val))) continue;
+							$notEmpty = true;
 							if(is_scalar($val))
 								$v[$kM2m] = $val = $this->scalarToArray($val,$k);
 							if(is_array($val))
@@ -456,9 +457,11 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 							$manyIteratorByK[$t] = $v;
 						}
 						$v->__readingState(false);
-						$addFK = [$inter,$type,$rc,$primaryKey,$xclusive];
-						if(!in_array($addFK,$fk))
-							$fk[] = $addFK;
+						if($notEmpty){
+							$addFK = [$inter,$type,$rc,$primaryKey,$xclusive];
+							if(!in_array($addFK,$fk))
+								$fk[] = $addFK;
+						}
 						$obj->$key = $v;
 					break;
 				}
