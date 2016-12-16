@@ -7989,7 +7989,7 @@ class RulableModel extends Model implements RulableInterface {
 		if($this->validateProperties===false) return;
 		$pk = $this->_table->getPrimaryKey();
 		foreach($this->keys() as $k){
-			if($k==$pk) continue;
+			if($k==$pk||substr($k,0,1)=='_') continue;
 			if(!in_array($k,$this->validateProperties)){
 				if($this->validatePropertiesSilent){
 					$this->__unset($k);
