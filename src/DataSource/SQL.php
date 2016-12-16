@@ -956,7 +956,11 @@ abstract class SQL extends DataSource{
 		else{
 			$tbj = $this->many2manyTableName($type1,$type2);
 		}
+		
 		$table = clone $this[$type2];
+		
+		$table->addTableDependency($tbj);
+		
 		$table->unFrom();
 		$table->from($tbj);
 		$table->join($type2E);

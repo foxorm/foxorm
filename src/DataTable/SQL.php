@@ -178,8 +178,7 @@ class SQL extends DataTable{
 	}
 	
 	function rewind(){
-		if(!$this->exists())
-			return;
+		if(!$this->fetchOk()) return;
 		$this->stmt = $this->fetch();
 		$this->next();
 	}

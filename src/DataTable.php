@@ -32,6 +32,7 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 	protected $isClone;
 	protected $tableWrapper;
 	protected $isOptional = false;
+	protected $dependenciesTables = [];
 	
 	function __construct($name,$dataSource){
 		
@@ -380,5 +381,26 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 	}
 	function deleteMany($type,$id){
 		return $this->dataSource->deleteMany($this->name,$type,$id);
+	}
+	
+	function addTableDependency($table){
+		if(!in_array($table,$this->dependenciesTables))
+			$this->dependenciesTables[] = $table;
+	}
+	function setTableDependency(array $tables = []){
+		$this->dependenciesTables = $tables;
+	}
+	function getTableDependency($table){
+		return $this->dependenciesTables;
+	}
+	
+	function fetchOk(){
+		if(!$this->exists())
+			return false;
+		foreach($this->dependenciesTables as $tb){
+			if(!$this->dataSource->tableExists($tb))
+				return false;
+		}
+		return true;
 	}
 }
