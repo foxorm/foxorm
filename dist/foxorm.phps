@@ -2387,7 +2387,11 @@ abstract class SQL extends DataSource{
 		else{
 			$tbj = $this->many2manyTableName($type1,$type2);
 		}
+		
 		$table = clone $this[$type2];
+		
+		$table->addTableDependency($tbj);
+		
 		$table->unFrom();
 		$table->from($tbj);
 		$table->join($type2E);
@@ -5810,6 +5814,7 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 	protected $isClone;
 	protected $tableWrapper;
 	protected $isOptional = false;
+	protected $dependenciesTables = [];
 	
 	function __construct($name,$dataSource){
 		
@@ -6159,6 +6164,27 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 	function deleteMany($type,$id){
 		return $this->dataSource->deleteMany($this->name,$type,$id);
 	}
+	
+	function addTableDependency($table){
+		if(!in_array($table,$this->dependenciesTables))
+			$this->dependenciesTables[] = $table;
+	}
+	function setTableDependency(array $tables = []){
+		$this->dependenciesTables = $tables;
+	}
+	function getTableDependency($table){
+		return $this->dependenciesTables;
+	}
+	
+	function fetchOk(){
+		if(!$this->exists())
+			return false;
+		foreach($this->dependenciesTables as $tb){
+			if(!$this->dataSource->tableExists($tb))
+				return false;
+		}
+		return true;
+	}
 }
 }
 #DataTable/SQL.php
@@ -6342,8 +6368,7 @@ class SQL extends DataTable{
 	}
 	
 	function rewind(){
-		if(!$this->exists())
-			return;
+		if(!$this->fetchOk()) return;
 		$this->stmt = $this->fetch();
 		$this->next();
 	}
@@ -7634,8 +7659,10 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 					$id = isset($v[$pk])?$v[$pk]:null;
 				}
 				if($id){
-					$k = $relationKey.'_'.$pk;
-					$v = $id;
+					$k2 = $relationKey.'_'.$pk;
+					$v2 = $id;
+					$this->__cursor[$k2] = &$this->__data[$k2];
+					$this->__data[$k2] = $v2;
 				}
 			}
 		}
