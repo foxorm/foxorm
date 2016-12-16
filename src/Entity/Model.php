@@ -61,7 +61,12 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 				$v = Cast::scalar($v);
 			}
 			else{
-				$id = is_object($v)?$v->$pk:$v[$pk];
+				if(is_object($v)){
+					$id = isset($v->$pk)?$v->$pk:null;
+				}
+				else{
+					$id = isset($v[$pk])?$v[$pk]:null;
+				}
 				if($id){
 					$k = $relationKey.'_'.$pk;
 					$v = $id;
