@@ -194,7 +194,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		return new $c($k,$this);
 	}
 	function construct(array $config=[]){}
-	function readRow($type,$id,$primaryKey='id',$uniqTextKey='uniq'){
+	function readRow($type,$id,$primaryKey='id',$uniqTextKey='uniq',$scope=null){
 		if(!$this->tableExists($type))
 			return;
 		$obj = $this->entityFactory($type);
@@ -202,7 +202,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		if($obj instanceof StateFollower) $obj->__readingState(true);
 		
 		$this->trigger($type,'beforeRead',$obj);
-		$obj = $this->readQuery($type,$id,$primaryKey,$uniqTextKey,$obj);
+		$obj = $this->readQuery($type,$id,$primaryKey,$uniqTextKey,$obj,$scope);
 		if($obj){
 			$obj->_type = $type;
 			$this->trigger($type,'afterRead',$obj);
@@ -213,7 +213,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		}
 		return $obj;
 	}
-	function deleteRow($type,$id,$primaryKey='id',$uniqTextKey='uniq'){
+	function deleteRow($type,$id,$primaryKey='id',$uniqTextKey='uniq',$scope=null){
 		if(!$this->tableExists($type))
 			return;
 		if(Cast::isScalar($id)){
@@ -236,13 +236,13 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 			}
 		}
 		$this->trigger($type,'beforeDelete',$obj);
-		$r = $this->deleteQuery($type,$id,$primaryKey,$uniqTextKey);
+		$r = $this->deleteQuery($type,$id,$primaryKey,$uniqTextKey,$scope);
 		if($r)
 			$this->trigger($type,'afterDelete',$obj);
 		return $r;
 	}
 	
-	function putRow($type,$obj,$id=null,$primaryKey='id',$uniqTextKey='uniq'){
+	function putRow($type,$obj,$id=null,$primaryKey='id',$uniqTextKey='uniq',$scope=null){
 		
 		if(isset($obj->_handling)&&$obj->_handling) return;
 		$obj->_handling = true;
@@ -490,7 +490,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		if(!$update||!isset($obj->_modified)||$obj->_modified!==false){
 			$modified = true;
 			if($update){
-				$r = $this->updateQuery($type,$properties,$id,$primaryKey,$uniqTextKey,$cast,$func);
+				$r = $this->updateQuery($type,$properties,$id,$primaryKey,$uniqTextKey,$cast,$func,$scope);
 				$obj->$primaryKey = $r;
 				if($obj instanceof StateFollower||isset($obj->_modified))
 					$obj->_modified = false;
@@ -499,7 +499,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 			else{
 				if(array_key_exists($primaryKey,$properties))
 					unset($properties[$primaryKey]);
-				$r = $this->createQuery($type,$properties,$primaryKey,$uniqTextKey,$cast,$func,$forcePK);
+				$r = $this->createQuery($type,$properties,$primaryKey,$uniqTextKey,$cast,$func,$forcePK,$scope);
 				$obj->$primaryKey = $r;
 				if($obj instanceof StateFollower||isset($obj->_modified))
 					$obj->_modified = false;

@@ -99,12 +99,17 @@ abstract class SQL extends DataSource{
 	protected function createQueryExec($table,$pk,$insertcolumns,$id,$insertSlots,$suffix,$insertvalues){
 		return $this->getCell('INSERT INTO '.$table.' ( '.$pk.', '.implode(',',$insertcolumns).' ) VALUES ( '.$id.', '. implode(',',$insertSlots).' ) '.$suffix,$insertvalues);
 	}
-	function createQuery($type,$properties,$primaryKey='id',$uniqTextKey='uniq',$cast=[],$func=[],$forcePK=null){
+	function createQuery($type,$properties,$primaryKey='id',$uniqTextKey='uniq',$cast=[],$func=[],$forcePK=null,$scope=null){
 		$insertcolumns = array_keys($properties);
 		$insertvalues = array_values($properties);
 		$id = $forcePK?$forcePK:$this->defaultValue;
 		$suffix  = $this->getInsertSuffix($primaryKey);
 		$table   = $this->escTable($type);
+		if($scope){
+			foreach($scope as $k=>$v){
+				$properties[$k] = $v;
+			}
+		}
 		$this->adaptStructure($type,$properties,$primaryKey,$uniqTextKey,$cast);
 		$pk = $this->esc($primaryKey);
 		if(!empty($insertcolumns)||!empty($func)){
@@ -130,25 +135,36 @@ abstract class SQL extends DataSource{
 			$this->adaptPrimaryKey($type,$id,$primaryKey);
 		return $id;
 	}
-	function readQuery($type,$id,$primaryKey='id',$uniqTextKey='uniq',$obj){
+	function readQuery($type,$id,$primaryKey='id',$uniqTextKey='uniq',$obj,$scope=null){
 		if($uniqTextKey&&!Cast::isInt($id))
 			$primaryKey = $uniqTextKey;
 		$table = $this->escTable($type);
 		$select = $this->getSelectSnippet($type);
-		$sql = "SELECT {$select} FROM {$table} WHERE {$primaryKey}=? LIMIT 1";
-		$row = $this->getRow($sql,[$id]);
+		$binds = [$id];
+		
+		$whereSnippet = '';
+		if($scope){
+			foreach($scope as $k=>$v){
+				$whereSnippet .= ' AND '.$k.' = ?';
+				$binds[] = $v;
+			}
+		}
+		
+		$sql = "SELECT {$select} FROM {$table} WHERE {$primaryKey}=? {$whereSnippet} LIMIT 1";
+		$row = $this->getRow($sql,$binds);
 		if($row){
 			foreach($row as $k=>$v)
 				$obj->$k = $v;
 			return $obj;
 		}
 	}
-	function updateQuery($type,$properties,$id=null,$primaryKey='id',$uniqTextKey='uniq',$cast=[],$func=[]){
+	function updateQuery($type,$properties,$id=null,$primaryKey='id',$uniqTextKey='uniq',$cast=[],$func=[],$scope=null){
 		if(!$this->tableExists($type))
 			return;
 		$this->adaptStructure($type,$properties,$primaryKey,$uniqTextKey,$cast);
 		$fields = [];
 		$binds = [];
+		
 		foreach($properties as $k=>$v){
 			if($k==$primaryKey)
 				continue;
@@ -168,13 +184,33 @@ abstract class SQL extends DataSource{
 			return $id;
 		$binds[] = $id;
 		$table = $this->escTable($type);
-		$this->execute('UPDATE '.$table.' SET '.implode(',',$fields).' WHERE '.$primaryKey.' = ? ', $binds);
+		
+		$whereSnippet = '';
+		if($scope){
+			foreach($scope as $k=>$v){
+				$whereSnippet .= ' AND '.$k.' = ?';
+				$binds[] = $v;
+			}
+		}
+		
+		$this->execute('UPDATE '.$table.' SET '.implode(',',$fields).' WHERE '.$primaryKey.' = ? '.$whereSnippet, $binds);
 		return $id;
 	}
 	function deleteQuery($type,$id,$primaryKey='id',$uniqTextKey='uniq'){
 		if($uniqTextKey&&!Cast::isInt($id))
 			$primaryKey = $uniqTextKey;
-		$this->execute('DELETE FROM '.$this->escTable($type).' WHERE '.$primaryKey.' = ?', [$id]);
+		
+		$binds = [$id];
+		
+		$whereSnippet = '';
+		if($scope){
+			foreach($scope as $k=>$v){
+				$whereSnippet .= ' AND '.$k.' = ?';
+				$binds[] = $v;
+			}
+		}
+		
+		$this->execute('DELETE FROM '.$this->escTable($type).' WHERE '.$primaryKey.' = ? '.$whereSnippet, $binds);
 		return $this->affectedRows;
 	}
 	

@@ -331,15 +331,15 @@ class Sqlite extends SQL{
 			$this->enableForeignKeys();
 		return parent::deleteQuery($type,$id,$primaryKey,$uniqTextKey);
 	}
-	function updateQuery($type,$properties,$id=null,$primaryKey='id',$uniqTextKey='uniq',$cast=[],$func=[]){
+	function updateQuery($type,$properties,$id=null,$primaryKey='id',$uniqTextKey='uniq',$cast=[],$func=[],$scope=null){
 		if(!$this->foreignKeyEnabled)
 			$this->enableForeignKeys();
-		return parent::updateQuery($type,$properties,$id,$primaryKey,$uniqTextKey,$cast,$func);
+		return parent::updateQuery($type,$properties,$id,$primaryKey,$uniqTextKey,$cast,$func,$scope);
 	}
-	function createQuery($type,$properties,$primaryKey='id',$uniqTextKey='uniq',$cast=[],$func=[],$forcePK=null){
+	function createQuery($type,$properties,$primaryKey='id',$uniqTextKey='uniq',$cast=[],$func=[],$forcePK=null,$scope=null){
 		if(!$this->foreignKeyEnabled)
 			$this->enableForeignKeys();
-		return parent::createQuery($type,$properties,$primaryKey,$uniqTextKey,$cast,$func,$forcePK);
+		return parent::createQuery($type,$properties,$primaryKey,$uniqTextKey,$cast,$func,$forcePK,$scope);
 	}
 	
 	function makeFtsTable($type,$columns=[],$primaryKey='id',$uniqTextKey='uniq',$fullTextSearchLocale=null){
