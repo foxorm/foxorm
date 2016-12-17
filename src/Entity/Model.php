@@ -270,6 +270,7 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 		$uk = $table->getPrimaryKey();
 		if(is_null($id)&&isset($this->$pk)) $id = $this->$pk;
 		if(is_null($id)&&isset($this->$uk)) $id = $this->$uk;
+		if(is_null($id)) return;
 		$k = Cast::isInt($id)?$pk:$uk;
 		if($table->columnExists($col))
 			return $this->db->getCell('SELECT '.$table->formatColumnName($col).' FROM '.$this->db->escTable($type).' WHERE '.$table->formatColumnName($k).' = ?',[$id]);
