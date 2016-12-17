@@ -23,7 +23,6 @@ $files = [
 	'DataSource/Mysql.php',
 	'DataSource/Pgsql.php',
 	'DataSource/Sqlite.php',
-	'DataSource/Filesystem.php',
 	'DataSource/Cubrid.php',
 	
 	'SqlComposer/Exception.php',
@@ -40,7 +39,6 @@ $files = [
 	'DataTable/Mysql.php',
 	'DataTable/Pgsql.php',
 	'DataTable/Sqlite.php',
-	'DataTable/Filesystem.php',
 	'DataTable/Cubrid.php',
 	
 	'Entity/TableWrapper.php',
