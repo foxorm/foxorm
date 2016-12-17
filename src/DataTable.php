@@ -159,22 +159,13 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 	function readId($id){
 		return $this->dataSource->readId($this->name,$id,$this->getPrimaryKey(),$this->getUniqTextKey());
 	}
-	function readRow($id){
-		if($this->tableWrapper&&method_exists($this->tableWrapper,__FUNCTION__)){
-			return call_user_func_array([$this->tableWrapper,__FUNCTION__],func_get_args());
-		}
+	function _readRow($id){
 		return $this->dataSource->readRow($this->name,$id,$this->getPrimaryKey(),$this->getUniqTextKey());
 	}
-	function putRow($obj,$id=null){
-		if($this->tableWrapper&&method_exists($this->tableWrapper,__FUNCTION__)){
-			return call_user_func_array([$this->tableWrapper,__FUNCTION__],func_get_args());
-		}
+	function _putRow($obj,$id=null){
 		return $this->dataSource->putRow($this->name,$obj,$id,$this->getPrimaryKey(),$this->getUniqTextKey());
 	}
-	function deleteRow($id){
-		if($this->tableWrapper&&method_exists($this->tableWrapper,__FUNCTION__)){
-			return call_user_func_array([$this->tableWrapper,__FUNCTION__],func_get_args());
-		}
+	function _deleteRow($id){
 		return $this->dataSource->deleteRow($this->name,$id,$this->getPrimaryKey(),$this->getUniqTextKey());
 	}
 	
@@ -289,6 +280,9 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 	function __call($f,$args){
 		if($this->tableWrapper&&method_exists($this->tableWrapper,$f)){
 			return call_user_func_array([$this->tableWrapper,$f],$args);
+		}
+		if(method_exists($this,'_'.$f)){
+			return call_user_func_array([$this,'_'.$f],$args);
 		}
 		throw new BadMethodCallException('Call to undefined method '.get_class($this).'->'.$f);
 	}
