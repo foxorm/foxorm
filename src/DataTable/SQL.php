@@ -921,23 +921,4 @@ class SQL extends DataTable{
 	function compose_notLike($columns, $searchPattern, $search, $and=false){
 		return $this->select->notLike($columns, $searchPattern, $search, $and);
 	}
-	
-	function readRow($id){
-		if($this->isClone){
-			return $this->getClone()->where($this->getPrimaryKey().' = ?',[$id])->getRow();
-		}
-		return parent::readRow($id);
-	}
-	function putRow($obj,$id=null){
-		if($this->isClone){
-			
-		}
-		return parent::putRow($obj,$id);
-	}
-	function deleteRow($id){
-		if($this->isClone){
-			
-		}
-		return parent::deleteRow($id);
-	}
 }
