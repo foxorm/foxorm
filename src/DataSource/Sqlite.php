@@ -331,12 +331,12 @@ class Sqlite extends SQL{
 			$this->enableForeignKeys();
 		return parent::deleteQuery($type,$id,$primaryKey,$uniqTextKey);
 	}
-	function updateQuery($type,$properties,$id=null,$primaryKey='id',$uniqTextKey='uniq',$cast=[],$func=[],$scope=null){
+	function updateQuery($type,$properties,$id=null,$primaryKey='id',$uniqTextKey='uniq',$cast=[],$func=[],array $scope=null){
 		if(!$this->foreignKeyEnabled)
 			$this->enableForeignKeys();
 		return parent::updateQuery($type,$properties,$id,$primaryKey,$uniqTextKey,$cast,$func,$scope);
 	}
-	function createQuery($type,$properties,$primaryKey='id',$uniqTextKey='uniq',$cast=[],$func=[],$forcePK=null,$scope=null){
+	function createQuery($type,$properties,$primaryKey='id',$uniqTextKey='uniq',$cast=[],$func=[],$forcePK=null,array $scope=null){
 		if(!$this->foreignKeyEnabled)
 			$this->enableForeignKeys();
 		return parent::createQuery($type,$properties,$primaryKey,$uniqTextKey,$cast,$func,$forcePK,$scope);

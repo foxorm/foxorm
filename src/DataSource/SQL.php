@@ -99,7 +99,7 @@ abstract class SQL extends DataSource{
 	protected function createQueryExec($table,$pk,$insertcolumns,$id,$insertSlots,$suffix,$insertvalues){
 		return $this->getCell('INSERT INTO '.$table.' ( '.$pk.', '.implode(',',$insertcolumns).' ) VALUES ( '.$id.', '. implode(',',$insertSlots).' ) '.$suffix,$insertvalues);
 	}
-	function createQuery($type,$properties,$primaryKey='id',$uniqTextKey='uniq',$cast=[],$func=[],$forcePK=null,$scope=null){
+	function createQuery($type,$properties,$primaryKey='id',$uniqTextKey='uniq',$cast=[],$func=[],$forcePK=null,array $scope=null){
 		$insertcolumns = array_keys($properties);
 		$insertvalues = array_values($properties);
 		$id = $forcePK?$forcePK:$this->defaultValue;
@@ -135,7 +135,7 @@ abstract class SQL extends DataSource{
 			$this->adaptPrimaryKey($type,$id,$primaryKey);
 		return $id;
 	}
-	function readQuery($type,$id,$primaryKey='id',$uniqTextKey='uniq',$obj,$scope=null){
+	function readQuery($type,$id,$primaryKey='id',$uniqTextKey='uniq',$obj,array $scope=null){
 		if($uniqTextKey&&!Cast::isInt($id))
 			$primaryKey = $uniqTextKey;
 		$table = $this->escTable($type);
@@ -158,7 +158,7 @@ abstract class SQL extends DataSource{
 			return $obj;
 		}
 	}
-	function updateQuery($type,$properties,$id=null,$primaryKey='id',$uniqTextKey='uniq',$cast=[],$func=[],$scope=null){
+	function updateQuery($type,$properties,$id=null,$primaryKey='id',$uniqTextKey='uniq',$cast=[],$func=[],array $scope=null){
 		if(!$this->tableExists($type))
 			return;
 		$this->adaptStructure($type,$properties,$primaryKey,$uniqTextKey,$cast);
@@ -196,7 +196,7 @@ abstract class SQL extends DataSource{
 		$this->execute('UPDATE '.$table.' SET '.implode(',',$fields).' WHERE '.$primaryKey.' = ? '.$whereSnippet, $binds);
 		return $id;
 	}
-	function deleteQuery($type,$id,$primaryKey='id',$uniqTextKey='uniq'){
+	function deleteQuery($type,$id,$primaryKey='id',$uniqTextKey='uniq',array $scope=null){
 		if($uniqTextKey&&!Cast::isInt($id))
 			$primaryKey = $uniqTextKey;
 		

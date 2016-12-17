@@ -159,13 +159,13 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 	function readId($id){
 		return $this->dataSource->readId($this->name,$id,$this->getPrimaryKey(),$this->getUniqTextKey());
 	}
-	function _readRow($id,$scope=null){
+	function _readRow($id,array $scope=null){
 		return $this->dataSource->readRow($this->name,$id,$this->getPrimaryKey(),$this->getUniqTextKey(),$scope);
 	}
-	function _putRow($obj,$id=null,$scope=null){
+	function _putRow($obj,$id=null,array $scope=null){
 		return $this->dataSource->putRow($this->name,$obj,$id,$this->getPrimaryKey(),$this->getUniqTextKey(),$scope);
 	}
-	function _deleteRow($id,$scope=null){
+	function _deleteRow($id,array $scope=null){
 		return $this->dataSource->deleteRow($this->name,$id,$this->getPrimaryKey(),$this->getUniqTextKey(),$scope);
 	}
 	

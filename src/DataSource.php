@@ -194,7 +194,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		return new $c($k,$this);
 	}
 	function construct(array $config=[]){}
-	function readRow($type,$id,$primaryKey='id',$uniqTextKey='uniq',$scope=null){
+	function readRow($type,$id,$primaryKey='id',$uniqTextKey='uniq',array $scope=null){
 		if(!$this->tableExists($type))
 			return;
 		$obj = $this->entityFactory($type);
@@ -213,7 +213,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		}
 		return $obj;
 	}
-	function deleteRow($type,$id,$primaryKey='id',$uniqTextKey='uniq',$scope=null){
+	function deleteRow($type,$id,$primaryKey='id',$uniqTextKey='uniq',array $scope=null){
 		if(!$this->tableExists($type))
 			return;
 		if(Cast::isScalar($id)){
@@ -242,7 +242,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		return $r;
 	}
 	
-	function putRow($type,$obj,$id=null,$primaryKey='id',$uniqTextKey='uniq',$scope=null){
+	function putRow($type,$obj,$id=null,$primaryKey='id',$uniqTextKey='uniq',array $scope=null){
 		
 		if(isset($obj->_handling)&&$obj->_handling) return;
 		$obj->_handling = true;
