@@ -40,4 +40,10 @@ class Filesystem extends DataSource{
 	function getCell($q, $bind = []){
 		
 	}
+	function tableExists($name){
+		return is_dir($this->directory.'/'.$type);
+	}
+	function drop($name){
+		
+	}
 }

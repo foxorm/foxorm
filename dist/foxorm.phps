@@ -642,11 +642,10 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		$this->tableMap[$k] = $v;
 	}
 	function offsetExists($k){
-		return isset($this->tableMap[$k]);
+		return $this->tableExists($k);
 	}
 	function offsetUnset($k){
-		if(isset($this->tableMap[$k]))
-			unset($this->tableMap[$k]);
+		$this->drop($k);
 	}
 	function loadTable($k){
 		$c = 'FoxORM\DataTable\\'.ucfirst($this->type);
@@ -1421,6 +1420,9 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 			return $this->debugLevel;
 		}
 	}
+	
+	abstract function drop($name);
+	abstract function tableExists($name);
 	abstract function getAll($q, $bind = []);
 	abstract function getRow($q, $bind = []);
 	abstract function getCol($q, $bind = []);
@@ -4284,6 +4286,12 @@ class Filesystem extends DataSource{
 		
 	}
 	function getCell($q, $bind = []){
+		
+	}
+	function tableExists($name){
+		return is_dir($this->directory.'/'.$type);
+	}
+	function drop($name){
 		
 	}
 }
@@ -8350,7 +8358,7 @@ class MainDb implements \ArrayAccess {
 		$this->db[$k] = $v;
 	}
 	function offsetExists($k){
-		return $this->db[$k];
+		return isset($this->db[$k]);
 	}
 	function offsetGet($k){
 		return $this->db[$k];

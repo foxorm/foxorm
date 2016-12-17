@@ -12,7 +12,7 @@ class MainDb implements \ArrayAccess {
 		$this->db[$k] = $v;
 	}
 	function offsetExists($k){
-		return $this->db[$k];
+		return isset($this->db[$k]);
 	}
 	function offsetGet($k){
 		return $this->db[$k];
