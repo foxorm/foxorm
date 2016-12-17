@@ -269,6 +269,9 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 	function getClone(){
 		return clone $this;
 	}
+	function isFork(){
+		$this->isClone = false;
+	}
 	function __clone(){
 		$this->isClone = true;
 		if($this->tableWrapper){
