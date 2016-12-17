@@ -652,7 +652,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		return new $c($k,$this);
 	}
 	function construct(array $config=[]){}
-	function readRow($type,$id,$primaryKey='id',$uniqTextKey='uniq'){
+	function readRow($type,$id,$primaryKey='id',$uniqTextKey='uniq',$scope=null){
 		if(!$this->tableExists($type))
 			return;
 		$obj = $this->entityFactory($type);
@@ -660,7 +660,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		if($obj instanceof StateFollower) $obj->__readingState(true);
 		
 		$this->trigger($type,'beforeRead',$obj);
-		$obj = $this->readQuery($type,$id,$primaryKey,$uniqTextKey,$obj);
+		$obj = $this->readQuery($type,$id,$primaryKey,$uniqTextKey,$obj,$scope);
 		if($obj){
 			$obj->_type = $type;
 			$this->trigger($type,'afterRead',$obj);
@@ -671,7 +671,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		}
 		return $obj;
 	}
-	function deleteRow($type,$id,$primaryKey='id',$uniqTextKey='uniq'){
+	function deleteRow($type,$id,$primaryKey='id',$uniqTextKey='uniq',$scope=null){
 		if(!$this->tableExists($type))
 			return;
 		if(Cast::isScalar($id)){
@@ -694,13 +694,13 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 			}
 		}
 		$this->trigger($type,'beforeDelete',$obj);
-		$r = $this->deleteQuery($type,$id,$primaryKey,$uniqTextKey);
+		$r = $this->deleteQuery($type,$id,$primaryKey,$uniqTextKey,$scope);
 		if($r)
 			$this->trigger($type,'afterDelete',$obj);
 		return $r;
 	}
 	
-	function putRow($type,$obj,$id=null,$primaryKey='id',$uniqTextKey='uniq'){
+	function putRow($type,$obj,$id=null,$primaryKey='id',$uniqTextKey='uniq',$scope=null){
 		
 		if(isset($obj->_handling)&&$obj->_handling) return;
 		$obj->_handling = true;
@@ -948,7 +948,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		if(!$update||!isset($obj->_modified)||$obj->_modified!==false){
 			$modified = true;
 			if($update){
-				$r = $this->updateQuery($type,$properties,$id,$primaryKey,$uniqTextKey,$cast,$func);
+				$r = $this->updateQuery($type,$properties,$id,$primaryKey,$uniqTextKey,$cast,$func,$scope);
 				$obj->$primaryKey = $r;
 				if($obj instanceof StateFollower||isset($obj->_modified))
 					$obj->_modified = false;
@@ -957,7 +957,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 			else{
 				if(array_key_exists($primaryKey,$properties))
 					unset($properties[$primaryKey]);
-				$r = $this->createQuery($type,$properties,$primaryKey,$uniqTextKey,$cast,$func,$forcePK);
+				$r = $this->createQuery($type,$properties,$primaryKey,$uniqTextKey,$cast,$func,$forcePK,$scope);
 				$obj->$primaryKey = $r;
 				if($obj instanceof StateFollower||isset($obj->_modified))
 					$obj->_modified = false;
@@ -1538,12 +1538,17 @@ abstract class SQL extends DataSource{
 	protected function createQueryExec($table,$pk,$insertcolumns,$id,$insertSlots,$suffix,$insertvalues){
 		return $this->getCell('INSERT INTO '.$table.' ( '.$pk.', '.implode(',',$insertcolumns).' ) VALUES ( '.$id.', '. implode(',',$insertSlots).' ) '.$suffix,$insertvalues);
 	}
-	function createQuery($type,$properties,$primaryKey='id',$uniqTextKey='uniq',$cast=[],$func=[],$forcePK=null){
+	function createQuery($type,$properties,$primaryKey='id',$uniqTextKey='uniq',$cast=[],$func=[],$forcePK=null,$scope=null){
 		$insertcolumns = array_keys($properties);
 		$insertvalues = array_values($properties);
 		$id = $forcePK?$forcePK:$this->defaultValue;
 		$suffix  = $this->getInsertSuffix($primaryKey);
 		$table   = $this->escTable($type);
+		if($scope){
+			foreach($scope as $k=>$v){
+				$properties[$k] = $v;
+			}
+		}
 		$this->adaptStructure($type,$properties,$primaryKey,$uniqTextKey,$cast);
 		$pk = $this->esc($primaryKey);
 		if(!empty($insertcolumns)||!empty($func)){
@@ -1569,25 +1574,36 @@ abstract class SQL extends DataSource{
 			$this->adaptPrimaryKey($type,$id,$primaryKey);
 		return $id;
 	}
-	function readQuery($type,$id,$primaryKey='id',$uniqTextKey='uniq',$obj){
+	function readQuery($type,$id,$primaryKey='id',$uniqTextKey='uniq',$obj,$scope=null){
 		if($uniqTextKey&&!Cast::isInt($id))
 			$primaryKey = $uniqTextKey;
 		$table = $this->escTable($type);
 		$select = $this->getSelectSnippet($type);
-		$sql = "SELECT {$select} FROM {$table} WHERE {$primaryKey}=? LIMIT 1";
-		$row = $this->getRow($sql,[$id]);
+		$binds = [$id];
+		
+		$whereSnippet = '';
+		if($scope){
+			foreach($scope as $k=>$v){
+				$whereSnippet .= ' AND '.$k.' = ?';
+				$binds[] = $v;
+			}
+		}
+		
+		$sql = "SELECT {$select} FROM {$table} WHERE {$primaryKey}=? {$whereSnippet} LIMIT 1";
+		$row = $this->getRow($sql,$binds);
 		if($row){
 			foreach($row as $k=>$v)
 				$obj->$k = $v;
 			return $obj;
 		}
 	}
-	function updateQuery($type,$properties,$id=null,$primaryKey='id',$uniqTextKey='uniq',$cast=[],$func=[]){
+	function updateQuery($type,$properties,$id=null,$primaryKey='id',$uniqTextKey='uniq',$cast=[],$func=[],$scope=null){
 		if(!$this->tableExists($type))
 			return;
 		$this->adaptStructure($type,$properties,$primaryKey,$uniqTextKey,$cast);
 		$fields = [];
 		$binds = [];
+		
 		foreach($properties as $k=>$v){
 			if($k==$primaryKey)
 				continue;
@@ -1607,13 +1623,33 @@ abstract class SQL extends DataSource{
 			return $id;
 		$binds[] = $id;
 		$table = $this->escTable($type);
-		$this->execute('UPDATE '.$table.' SET '.implode(',',$fields).' WHERE '.$primaryKey.' = ? ', $binds);
+		
+		$whereSnippet = '';
+		if($scope){
+			foreach($scope as $k=>$v){
+				$whereSnippet .= ' AND '.$k.' = ?';
+				$binds[] = $v;
+			}
+		}
+		
+		$this->execute('UPDATE '.$table.' SET '.implode(',',$fields).' WHERE '.$primaryKey.' = ? '.$whereSnippet, $binds);
 		return $id;
 	}
 	function deleteQuery($type,$id,$primaryKey='id',$uniqTextKey='uniq'){
 		if($uniqTextKey&&!Cast::isInt($id))
 			$primaryKey = $uniqTextKey;
-		$this->execute('DELETE FROM '.$this->escTable($type).' WHERE '.$primaryKey.' = ?', [$id]);
+		
+		$binds = [$id];
+		
+		$whereSnippet = '';
+		if($scope){
+			foreach($scope as $k=>$v){
+				$whereSnippet .= ' AND '.$k.' = ?';
+				$binds[] = $v;
+			}
+		}
+		
+		$this->execute('DELETE FROM '.$this->escTable($type).' WHERE '.$primaryKey.' = ? '.$whereSnippet, $binds);
 		return $this->affectedRows;
 	}
 	
@@ -4182,15 +4218,15 @@ class Sqlite extends SQL{
 			$this->enableForeignKeys();
 		return parent::deleteQuery($type,$id,$primaryKey,$uniqTextKey);
 	}
-	function updateQuery($type,$properties,$id=null,$primaryKey='id',$uniqTextKey='uniq',$cast=[],$func=[]){
+	function updateQuery($type,$properties,$id=null,$primaryKey='id',$uniqTextKey='uniq',$cast=[],$func=[],$scope=null){
 		if(!$this->foreignKeyEnabled)
 			$this->enableForeignKeys();
-		return parent::updateQuery($type,$properties,$id,$primaryKey,$uniqTextKey,$cast,$func);
+		return parent::updateQuery($type,$properties,$id,$primaryKey,$uniqTextKey,$cast,$func,$scope);
 	}
-	function createQuery($type,$properties,$primaryKey='id',$uniqTextKey='uniq',$cast=[],$func=[],$forcePK=null){
+	function createQuery($type,$properties,$primaryKey='id',$uniqTextKey='uniq',$cast=[],$func=[],$forcePK=null,$scope=null){
 		if(!$this->foreignKeyEnabled)
 			$this->enableForeignKeys();
-		return parent::createQuery($type,$properties,$primaryKey,$uniqTextKey,$cast,$func,$forcePK);
+		return parent::createQuery($type,$properties,$primaryKey,$uniqTextKey,$cast,$func,$forcePK,$scope);
 	}
 	
 	function makeFtsTable($type,$columns=[],$primaryKey='id',$uniqTextKey='uniq',$fullTextSearchLocale=null){
@@ -5904,14 +5940,14 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 	function readId($id){
 		return $this->dataSource->readId($this->name,$id,$this->getPrimaryKey(),$this->getUniqTextKey());
 	}
-	function readRow($id){
-		return $this->dataSource->readRow($this->name,$id,$this->getPrimaryKey(),$this->getUniqTextKey());
+	function _readRow($id,$scope=null){
+		return $this->dataSource->readRow($this->name,$id,$this->getPrimaryKey(),$this->getUniqTextKey(),$scope);
 	}
-	function putRow($obj,$id=null){
-		return $this->dataSource->putRow($this->name,$obj,$id,$this->getPrimaryKey(),$this->getUniqTextKey());
+	function _putRow($obj,$id=null,$scope=null){
+		return $this->dataSource->putRow($this->name,$obj,$id,$this->getPrimaryKey(),$this->getUniqTextKey(),$scope);
 	}
-	function deleteRow($id){
-		return $this->dataSource->deleteRow($this->name,$id,$this->getPrimaryKey(),$this->getUniqTextKey());
+	function _deleteRow($id,$scope=null){
+		return $this->dataSource->deleteRow($this->name,$id,$this->getPrimaryKey(),$this->getUniqTextKey(),$scope);
 	}
 	
 	function loadOne($obj){
@@ -6014,6 +6050,9 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 	function getClone(){
 		return clone $this;
 	}
+	function isFork(){
+		$this->isClone = false;
+	}
 	function __clone(){
 		$this->isClone = true;
 		if($this->tableWrapper){
@@ -6025,6 +6064,9 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 	function __call($f,$args){
 		if($this->tableWrapper&&method_exists($this->tableWrapper,$f)){
 			return call_user_func_array([$this->tableWrapper,$f],$args);
+		}
+		if(method_exists($this,'_'.$f)){
+			return call_user_func_array([$this,'_'.$f],$args);
 		}
 		throw new BadMethodCallException('Call to undefined method '.get_class($this).'->'.$f);
 	}
@@ -6427,7 +6469,7 @@ class SQL extends DataTable{
 		return new Insert($this->name, $this->quoteCharacter, $this->tablePrefix, [$this->dataSource,'getAll'], $this->dataSource->getType());
 	}
 	function updateQuery(){
-		return new Insert($this->name, $this->quoteCharacter, $this->tablePrefix, [$this->dataSource,'getAll'], $this->dataSource->getType());
+		return new Update($this->name, $this->quoteCharacter, $this->tablePrefix, [$this->dataSource,'getAll'], $this->dataSource->getType());
 	}
 	function replaceQuery(){
 		return new Replace($this->name, $this->quoteCharacter, $this->tablePrefix, [$this->dataSource,'getAll'], $this->dataSource->getType());
@@ -7726,6 +7768,7 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 		$uk = $table->getPrimaryKey();
 		if(is_null($id)&&isset($this->$pk)) $id = $this->$pk;
 		if(is_null($id)&&isset($this->$uk)) $id = $this->$uk;
+		if(is_null($id)) return;
 		$k = Cast::isInt($id)?$pk:$uk;
 		if($table->columnExists($col))
 			return $this->db->getCell('SELECT '.$table->formatColumnName($col).' FROM '.$this->db->escTable($type).' WHERE '.$table->formatColumnName($k).' = ?',[$id]);
