@@ -652,7 +652,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		return new $c($k,$this);
 	}
 	function construct(array $config=[]){}
-	function readRow($type,$id,$primaryKey='id',$uniqTextKey='uniq',$scope=null){
+	function readRow($type,$id,$primaryKey='id',$uniqTextKey='uniq',array $scope=null){
 		if(!$this->tableExists($type))
 			return;
 		$obj = $this->entityFactory($type);
@@ -671,7 +671,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		}
 		return $obj;
 	}
-	function deleteRow($type,$id,$primaryKey='id',$uniqTextKey='uniq',$scope=null){
+	function deleteRow($type,$id,$primaryKey='id',$uniqTextKey='uniq',array $scope=null){
 		if(!$this->tableExists($type))
 			return;
 		if(Cast::isScalar($id)){
@@ -700,7 +700,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		return $r;
 	}
 	
-	function putRow($type,$obj,$id=null,$primaryKey='id',$uniqTextKey='uniq',$scope=null){
+	function putRow($type,$obj,$id=null,$primaryKey='id',$uniqTextKey='uniq',array $scope=null){
 		
 		if(isset($obj->_handling)&&$obj->_handling) return;
 		$obj->_handling = true;
@@ -1538,7 +1538,7 @@ abstract class SQL extends DataSource{
 	protected function createQueryExec($table,$pk,$insertcolumns,$id,$insertSlots,$suffix,$insertvalues){
 		return $this->getCell('INSERT INTO '.$table.' ( '.$pk.', '.implode(',',$insertcolumns).' ) VALUES ( '.$id.', '. implode(',',$insertSlots).' ) '.$suffix,$insertvalues);
 	}
-	function createQuery($type,$properties,$primaryKey='id',$uniqTextKey='uniq',$cast=[],$func=[],$forcePK=null,$scope=null){
+	function createQuery($type,$properties,$primaryKey='id',$uniqTextKey='uniq',$cast=[],$func=[],$forcePK=null,array $scope=null){
 		$insertcolumns = array_keys($properties);
 		$insertvalues = array_values($properties);
 		$id = $forcePK?$forcePK:$this->defaultValue;
@@ -1574,7 +1574,7 @@ abstract class SQL extends DataSource{
 			$this->adaptPrimaryKey($type,$id,$primaryKey);
 		return $id;
 	}
-	function readQuery($type,$id,$primaryKey='id',$uniqTextKey='uniq',$obj,$scope=null){
+	function readQuery($type,$id,$primaryKey='id',$uniqTextKey='uniq',$obj,array $scope=null){
 		if($uniqTextKey&&!Cast::isInt($id))
 			$primaryKey = $uniqTextKey;
 		$table = $this->escTable($type);
@@ -1597,7 +1597,7 @@ abstract class SQL extends DataSource{
 			return $obj;
 		}
 	}
-	function updateQuery($type,$properties,$id=null,$primaryKey='id',$uniqTextKey='uniq',$cast=[],$func=[],$scope=null){
+	function updateQuery($type,$properties,$id=null,$primaryKey='id',$uniqTextKey='uniq',$cast=[],$func=[],array $scope=null){
 		if(!$this->tableExists($type))
 			return;
 		$this->adaptStructure($type,$properties,$primaryKey,$uniqTextKey,$cast);
@@ -1635,7 +1635,7 @@ abstract class SQL extends DataSource{
 		$this->execute('UPDATE '.$table.' SET '.implode(',',$fields).' WHERE '.$primaryKey.' = ? '.$whereSnippet, $binds);
 		return $id;
 	}
-	function deleteQuery($type,$id,$primaryKey='id',$uniqTextKey='uniq'){
+	function deleteQuery($type,$id,$primaryKey='id',$uniqTextKey='uniq',array $scope=null){
 		if($uniqTextKey&&!Cast::isInt($id))
 			$primaryKey = $uniqTextKey;
 		
@@ -4213,17 +4213,17 @@ class Sqlite extends SQL{
 		$this->foreignKeyEnabled = false;
 	}
 	
-	function deleteQuery($type,$id,$primaryKey='id',$uniqTextKey='uniq'){
+	function deleteQuery($type,$id,$primaryKey='id',$uniqTextKey='uniq',array $scope=null){
 		if(!$this->foreignKeyEnabled)
 			$this->enableForeignKeys();
-		return parent::deleteQuery($type,$id,$primaryKey,$uniqTextKey);
+		return parent::deleteQuery($type,$id,$primaryKey,$uniqTextKey,$scope);
 	}
-	function updateQuery($type,$properties,$id=null,$primaryKey='id',$uniqTextKey='uniq',$cast=[],$func=[],$scope=null){
+	function updateQuery($type,$properties,$id=null,$primaryKey='id',$uniqTextKey='uniq',$cast=[],$func=[],array $scope=null){
 		if(!$this->foreignKeyEnabled)
 			$this->enableForeignKeys();
 		return parent::updateQuery($type,$properties,$id,$primaryKey,$uniqTextKey,$cast,$func,$scope);
 	}
-	function createQuery($type,$properties,$primaryKey='id',$uniqTextKey='uniq',$cast=[],$func=[],$forcePK=null,$scope=null){
+	function createQuery($type,$properties,$primaryKey='id',$uniqTextKey='uniq',$cast=[],$func=[],$forcePK=null,array $scope=null){
 		if(!$this->foreignKeyEnabled)
 			$this->enableForeignKeys();
 		return parent::createQuery($type,$properties,$primaryKey,$uniqTextKey,$cast,$func,$forcePK,$scope);
@@ -5940,13 +5940,13 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 	function readId($id){
 		return $this->dataSource->readId($this->name,$id,$this->getPrimaryKey(),$this->getUniqTextKey());
 	}
-	function _readRow($id,$scope=null){
+	function _readRow($id,array $scope=null){
 		return $this->dataSource->readRow($this->name,$id,$this->getPrimaryKey(),$this->getUniqTextKey(),$scope);
 	}
-	function _putRow($obj,$id=null,$scope=null){
+	function _putRow($obj,$id=null,array $scope=null){
 		return $this->dataSource->putRow($this->name,$obj,$id,$this->getPrimaryKey(),$this->getUniqTextKey(),$scope);
 	}
-	function _deleteRow($id,$scope=null){
+	function _deleteRow($id,array $scope=null){
 		return $this->dataSource->deleteRow($this->name,$id,$this->getPrimaryKey(),$this->getUniqTextKey(),$scope);
 	}
 	
