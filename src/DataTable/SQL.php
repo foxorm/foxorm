@@ -274,7 +274,7 @@ class SQL extends DataTable{
 		return new Insert($this->name, $this->quoteCharacter, $this->tablePrefix, [$this->dataSource,'getAll'], $this->dataSource->getType());
 	}
 	function updateQuery(){
-		return new Insert($this->name, $this->quoteCharacter, $this->tablePrefix, [$this->dataSource,'getAll'], $this->dataSource->getType());
+		return new Update($this->name, $this->quoteCharacter, $this->tablePrefix, [$this->dataSource,'getAll'], $this->dataSource->getType());
 	}
 	function replaceQuery(){
 		return new Replace($this->name, $this->quoteCharacter, $this->tablePrefix, [$this->dataSource,'getAll'], $this->dataSource->getType());
@@ -921,4 +921,6 @@ class SQL extends DataTable{
 	function compose_notLike($columns, $searchPattern, $search, $and=false){
 		return $this->select->notLike($columns, $searchPattern, $search, $and);
 	}
+	
+	
 }
