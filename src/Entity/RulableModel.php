@@ -69,15 +69,17 @@ class RulableModel extends Model implements RulableInterface {
 			return;
 		}
 		if(is_array($this->validateAllowHtml)){
-			foreach($this->keys() as $k){
-				if(!in_array($k,$this->validateAllowHtml)){
-					$this->$k = strip_tags($k);
+			foreach($this as $k=>$v){
+				if(is_scalar($v)&&!in_array($k,$this->validateAllowHtml)){
+					$this->$k = strip_tags($v);
 				}
 			}
 		}
 		else{
-			foreach($this->keys() as $k){
-				$this->$k = strip_tags($k);
+			foreach($this as $k){
+				if(is_scalar($v)){
+					$this->$k = strip_tags($v);
+				}
 			}
 		}
 	}
