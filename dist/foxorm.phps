@@ -7942,6 +7942,7 @@ class RulableModel extends Model implements RulableInterface {
 	protected $validatePreFilters = [];
 	protected $validateRules = [];
 	protected $validateFilters = [];
+	protected $validateAllowHtml = true;
 	protected $validateProperties = false;
 	protected $validatePropertiesSilent = true;
 	function applyValidateProperties(){
@@ -7964,6 +7965,7 @@ class RulableModel extends Model implements RulableInterface {
 	}
 	function applyValidatePreFilters(){
 		$this->_applyFilters($this->validatePreFilters);
+		$this->_applyFilterHtml();
 	}
 	function applyValidateRules(){
 		$this
@@ -7997,6 +7999,23 @@ class RulableModel extends Model implements RulableInterface {
 		}
 		
 		$this->__readingState(false);
+	}
+	protected function _applyFilterHtml(){
+		if($this->validateAllowHtml===true){
+			return;
+		}
+		if(is_array($this->validateAllowHtml)){
+			foreach($this->keys() as $k){
+				if(!in_array($k,$this->validateAllowHtml)){
+					$this->$k = strip_tags($k);
+				}
+			}
+		}
+		else{
+			foreach($this->keys() as $k){
+				$this->$k = strip_tags($k);
+			}
+		}
 	}
 }
 }
