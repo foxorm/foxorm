@@ -139,7 +139,10 @@ class ArrayIterator implements ArrayAccess,Iterator,JsonSerializable,Countable{
 		}
 	}
 	
-	function __modified(){
+	function __modified($set=null){
+		if(isset($set)){
+			$this->__modified = (bool)$set;
+		}
 		return $this->__modified;
 	}
 	function __readingState($b){
