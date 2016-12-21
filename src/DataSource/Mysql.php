@@ -189,6 +189,9 @@ class Mysql extends SQL{
 		$fkName = 'fk_'.$tableNoQ.'_'.$fieldNoQ;
 		$cName = 'c_'.$fkName;
 		try {
+			if($fk){
+				$this->executeFluid("ALTER TABLE DROP FOREIGN KEY `$fkName`");
+			}
 			$this->executeFluid( "
 				ALTER TABLE {$table}
 				ADD CONSTRAINT $cName
