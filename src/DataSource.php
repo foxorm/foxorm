@@ -406,6 +406,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 							if(is_array($val))
 								$v[$mk] = $val = $this->arrayToEntity($val,$k);
 							
+							
 							$t = isset($val->_type)?$val->_type:$k;
 							
 							$rc = $type.'_'.$primaryKey;
@@ -442,6 +443,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 								$v[$kM2m] = $val = $this->scalarToArray($val,$k);
 							if(is_array($val))
 								$v[$kM2m] = $val = $this->arrayToEntity($val,$k);
+							
 							
 							$t = isset($val->_type)?$val->_type:$k;
 							
@@ -927,7 +929,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 	
 	function entityHasPrimaryKey($entity){
 		$pk = $this[$entity->type]->getPrimaryKey();
-		return !!$this->$pk;
+		return isset($this->$pk);
 	}
 	
 	function jsonSerialize(){
