@@ -925,6 +925,11 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		return $a;
 	}
 	
+	function entityHasPrimaryKey($entity){
+		$pk = $this[$entity->type]->getPrimaryKey();
+		return !!$this->$pk;
+	}
+	
 	function jsonSerialize(){
 		$data = [];
 		foreach($this as $name=>$row){
