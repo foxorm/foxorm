@@ -567,7 +567,9 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		}
 		if(method_exists($this,'addFK')){
 			foreach($fk as list($typ,$targetType,$property,$targetProperty,$isDep)){
-				$this->addFK($typ,$targetType,$property,$targetProperty,$isDep);
+				if($this->tableExists($targetType)){
+					$this->addFK($typ,$targetType,$property,$targetProperty,$isDep);
+				}
 			}
 		}
 
