@@ -934,7 +934,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 	}
 	
 	function entityHasPrimaryKey($entity){
-		$pk = $this[$entity->type]->getPrimaryKey();
+		$pk = $this[$entity->_type]->getPrimaryKey();
 		return isset($this->$pk);
 	}
 	
