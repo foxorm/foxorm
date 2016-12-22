@@ -135,8 +135,13 @@ class ArrayIterator implements ArrayAccess,Iterator,JsonSerializable,Countable{
 	}
 	
 	function __clone(){
-		foreach($this->data as $k=>$o){
-			$this->data[$k] = clone $o;
+		if(is_array($this->data)){
+			foreach($this->data as $k=>$o){
+				$this->data[$k] = clone $o;
+			}
+		}
+		else if(is_object($this->data)){
+			$this->data = clone $this->data;
 		}
 	}
 	
