@@ -190,7 +190,7 @@ class Mysql extends SQL{
 		$cName = 'c_'.$fkName;
 		try {
 			if($fk){
-				$this->executeFluid("ALTER TABLE $table DROP FOREIGN KEY `$fkName`");
+				$this->executeFluid("ALTER TABLE $table DROP FOREIGN KEY `{$fk['name']}`");
 			}
 			$this->executeFluid( "
 				ALTER TABLE {$table}
