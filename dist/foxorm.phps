@@ -80,8 +80,6 @@ use Countable;
 use stdClass;
 use BadMethodCallException;
 class ArrayIterator implements ArrayAccess,Iterator,JsonSerializable,Countable{
-	private $__readingState;
-	private $__modified = false;
 	
 	protected $data = [];
 	function __construct($data=[]){
@@ -206,16 +204,14 @@ class ArrayIterator implements ArrayAccess,Iterator,JsonSerializable,Countable{
 	}
 	
 	function __clone(){
-		foreach($this->data as $k=>$o){
-			$this->data[$k] = clone $o;
+		if(is_array($this->data)){
+			foreach($this->data as $k=>$o){
+				$this->data[$k] = clone $o;
+			}
 		}
-	}
-	
-	function __modified(){
-		return $this->__modified;
-	}
-	function __readingState($b){
-		$this->__readingState = (bool)$b;
+		else if(is_object($this->data)){
+			$this->data = clone $this->data;
+		}
 	}
 	
 	function __call($f,$args){
@@ -458,8 +454,8 @@ class Bases implements \ArrayAccess{
 #DataSource.php
 
 namespace FoxORM {
+use FoxORM\Collection;
 use FoxORM\Std\Cast;
-use FoxORM\Std\ArrayIterator;
 use FoxORM\Std\CaseConvert;
 use FoxORM\Std\ScalarInterface;
 use FoxORM\Entity\StateFollower;
@@ -802,7 +798,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 					continue;
 				}
 			}
-			elseif(is_array($v)||($v instanceof ArrayIterator)){
+			elseif(is_array($v)||($v instanceof Collection)){
 				$relation = 'many';
 			}
 			elseif(is_object($v)){
@@ -816,7 +812,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 			}
 			
 			if($relation){
-				if(empty($v)) continue;
+				if(empty($v)&&!$update) continue;
 				switch($relation){
 					case 'oneByPK':
 						$pk = $this[$t]->getPrimaryKey();
@@ -853,16 +849,26 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 						$obj->$key = $v;
 					break;
 					case 'many':
-						if(!($v instanceof ArrayIterator)){
-							$v = new ArrayIterator($v);
+						if(!($v instanceof Collection)){
+							$v = new Collection($v, $this, $k);
 						}
+						$v->__exclusive($xclusive);
 						$v->__readingState(true);
+						if(!$v->valid()){ //empty
+							$one2manyNew[$k] = [];
+							$manyIteratorByK[$k] = $v;
+							$v->__modified(true);
+						}
 						foreach($v as $mk=>$val){
 							if(empty($val)&&(is_scalar($val)||is_null($val))) continue;
 							if(is_scalar($val))
 								$v[$mk] = $val = $this->scalarToArray($val,$k);
 							if(is_array($val))
 								$v[$mk] = $val = $this->arrayToEntity($val,$k);
+							
+							if(!$this->entityHasPrimaryKey($val)){
+								$v->__modified(true);
+							}
 							
 							$t = isset($val->_type)?$val->_type:$k;
 							
@@ -878,15 +884,21 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 						$obj->$key = $v;
 					break;
 					case 'many2many':
-						if(!($v instanceof ArrayIterator)){
-							$obj->$key = $v = new ArrayIterator($v);
+						if(!($v instanceof Collection)){
+							$obj->$key = $v = new Collection($v, $this, $k);
 						}
+						$v->__exclusive($xclusive);
 						if(false!==$i=strpos($k,':')){ //via
 							$inter = substr($k,$i+1);
 							$k = substr($k,0,$i);
 						}
 						else{
 							$inter = $this->many2manyTableName($type,$k);
+						}
+						if(!$v->valid()){ //empty
+							$many2manyNew[$k][$k][$inter] = [];
+							$manyIteratorByK[$k] = $v;
+							$v->__modified(true);
 						}
 						$typeColSuffix = $type==$k?'2':'';
 						$rc = $type.'_'.$primaryKey;
@@ -900,6 +912,10 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 								$v[$kM2m] = $val = $this->scalarToArray($val,$k);
 							if(is_array($val))
 								$v[$kM2m] = $val = $this->arrayToEntity($val,$k);
+							
+							if(!$this->entityHasPrimaryKey($val)){
+								$v->__modified(true);
+							}
 							
 							$t = isset($val->_type)?$val->_type:$k;
 							
@@ -982,7 +998,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 						$except[] = $val->$pk;
 						
 				}
-				if($manyIteratorByK[$k]->__modified()){
+				if($manyIteratorByK[$k]->__exclusive()&&$manyIteratorByK[$k]->__modified()){
 					$this->one2manyDeleteAll($obj,$k,$except);
 				}
 			}
@@ -997,7 +1013,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 			}
 		}
 		foreach($many2manyNew as $t=>$v){
-			$modified = $manyIteratorByK[$t]->__modified();
+			$clean = $manyIteratorByK[$k]->__exclusive()&&$manyIteratorByK[$t]->__modified();
 			foreach($v as $k=>$viaLoop){
 				foreach($viaLoop as $via=>$val){
 					if($update){
@@ -1011,7 +1027,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 								$except[] = $id;
 							}
 						}
-						if($modified){
+						if($clean){
 							$this->many2manyDeleteAll($obj,$t,$via,$except,$viaFk);
 						}
 					}
@@ -1025,7 +1041,9 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		}
 		if(method_exists($this,'addFK')){
 			foreach($fk as list($typ,$targetType,$property,$targetProperty,$isDep)){
-				$this->addFK($typ,$targetType,$property,$targetProperty,$isDep);
+				if($this->tableExists($targetType)){
+					$this->addFK($typ,$targetType,$property,$targetProperty,$isDep);
+				}
 			}
 		}
 
@@ -1381,6 +1399,11 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		return $a;
 	}
 	
+	function entityHasPrimaryKey($entity){
+		$pk = $this[$entity->_type]->getPrimaryKey();
+		return isset($this->$pk);
+	}
+	
 	function jsonSerialize(){
 		$data = [];
 		foreach($this as $name=>$row){
@@ -1429,7 +1452,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 	abstract function getCell($q, $bind = []);
 	
 	function getAllIterator($q, $bind){
-		return new ArrayIterator($this->getAll($q, $bind));
+		return new Collection($this->getAll($q, $bind), $this);
 	}
 	function getValidateService(){
 		return $this->bases->getValidateService();
@@ -2519,6 +2542,7 @@ abstract class SQL extends DataSource{
 		$params = [$obj->$pko];
 		if(!empty($except)){
 			$notIn = ' AND '.$pko.' NOT IN ?';
+			$except = array_unique($except);
 			$params[] = $except;
 		}
 		$this->execute('DELETE FROM '.$typeE.' WHERE '.$column.' = ?'.$notIn,$params);
@@ -2555,6 +2579,7 @@ abstract class SQL extends DataSource{
 		$params = [$obj->$pko];
 		if(!empty($except)){
 			$notIn = ' AND '.$tbj.'.'.$pke.' NOT IN ?';
+			$except = array_unique($except);
 			$params[] = $except;
 		}
 		$this->execute('DELETE FROM '.$tbj.' WHERE '.$tbj.'.'.$pke.' IN(
@@ -3081,6 +3106,9 @@ class Mysql extends SQL{
 		$fkName = 'fk_'.$tableNoQ.'_'.$fieldNoQ;
 		$cName = 'c_'.$fkName;
 		try {
+			if($fk){
+				$this->executeFluid("ALTER TABLE $table DROP FOREIGN KEY `{$fk['name']}`");
+			}
 			$this->executeFluid( "
 				ALTER TABLE {$table}
 				ADD CONSTRAINT $cName
@@ -3683,6 +3711,11 @@ class Pgsql extends SQL{
 		)
 			return false;
 		try{
+			if($fk){
+				//$fkName = "{$targetType}_{$targetProperty}_fkey";
+				$fkName = $fk['name'];
+				$this->execute("ALTER TABLE $table DROP FOREIGN KEY `$fkName`");
+			}
 			$this->execute( "ALTER TABLE {$table}
 				ADD FOREIGN KEY ( {$field} ) REFERENCES  {$targetTable}
 				({$targetField}) ON DELETE {$casc} ON UPDATE {$casc} DEFERRABLE ;" );
@@ -4417,9 +4450,12 @@ class Cubrid extends SQL{
 		$fk = $this->getForeignKeyForTypeProperty( $type, $columnNoQ );
 		if ( !is_null( $fk )&&($fk['on_delete']==$casc||$fk['on_delete']=='CASCADE'))
 			return false;
-		$sql  = "ALTER TABLE $table ADD CONSTRAINT FOREIGN KEY($column) REFERENCES $targetTable($targetColumn) ON DELETE $casc";
+		$fkName = $fk['name'];
 		try {
-			$this->execute($sql);
+			if($fk){
+				$this->execute("ALTER TABLE {$table} DROP FOREIGN KEY {$fkName};");
+			}
+			$this->execute("ALTER TABLE $table ADD CONSTRAINT FOREIGN KEY($column) REFERENCES $targetTable($targetColumn) ON DELETE $casc");
 		} catch( PDOException $e ) {
 			return false;
 		}
@@ -5781,9 +5817,9 @@ class Replace extends Base {
 #DataTable.php
 
 namespace FoxORM {
+use FoxORM\Collection;
 use FoxORM\Helper\Pagination;
 use FoxORM\Std\Cast;
-use FoxORM\Std\ArrayIterator;
 use BadMethodCallException;
 abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSerializable{
 	private static $defaultEvents = [
@@ -5964,17 +6000,17 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 	}
 	function many($obj){
 		$many = $this->dataSource->one2many($obj,$this->name);
-		$many = new ArrayIterator($many);
+		$many = new Collection($many, $this->dataSource);
 		return $many;
 	}
 	function many2many($obj,$via=null){
 		$many = $this->dataSource->many2many($obj,$this->name,$via);
-		$many = new ArrayIterator($many);
+		$many = new Collection($many, $this->dataSource);
 		return $many;
 	}
 	function many2manyLink($obj,$via=null,$viaFk=null){
 		$many = $this->dataSource->many2manyLink($obj,$this->name,$via,$viaFk);
-		$many = new ArrayIterator($many);
+		$many = new Collection($many, $this->dataSource);
 		return $many;
 	}
 	
@@ -5984,7 +6020,7 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 	abstract function getCell();
 	
 	function getAllIterator(){
-		return new ArrayIterator($this->getAll());
+		return new Collection($this->getAll(), $this->dataSource);
 	}
 	
 	function on($event,$call=null,$index=0,$prepend=false){
@@ -7937,7 +7973,6 @@ interface RulableInterface{
 
 namespace FoxORM\Entity {
 use FoxORM\Exception\ValidationException;
-use FoxORM\Std\ArrayIterator;
 class RulableModel extends Model implements RulableInterface {
 	protected $validatePreFilters = [];
 	protected $validateRules = [];
