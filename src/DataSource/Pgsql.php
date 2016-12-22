@@ -201,7 +201,7 @@ class Pgsql extends SQL{
 			if($fk){
 				//$fkName = "{$targetType}_{$targetProperty}_fkey";
 				$fkName = $fk['name'];
-				$this->execute("ALTER TABLE DROP FOREIGN KEY `$fkName`");
+				$this->execute("ALTER TABLE $table DROP FOREIGN KEY `$fkName`");
 			}
 			$this->execute( "ALTER TABLE {$table}
 				ADD FOREIGN KEY ( {$field} ) REFERENCES  {$targetTable}

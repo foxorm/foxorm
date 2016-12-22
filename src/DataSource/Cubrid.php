@@ -136,7 +136,7 @@ class Cubrid extends SQL{
 		$fkName = $fk['name'];
 		try {
 			if($fk){
-				$this->execute("ALTER TABLE a_tbl DROP FOREIGN KEY {$fkName};");
+				$this->execute("ALTER TABLE {$table} DROP FOREIGN KEY {$fkName};");
 			}
 			$this->execute("ALTER TABLE $table ADD CONSTRAINT FOREIGN KEY($column) REFERENCES $targetTable($targetColumn) ON DELETE $casc");
 		} catch( PDOException $e ) {
