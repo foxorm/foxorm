@@ -398,6 +398,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 						if(!($v instanceof ArrayIterator)){
 							$v = new ArrayIterator($v);
 						}
+						$v->__exclusive($xclusive);
 						$v->__readingState(true);
 						if(!$v->valid()){ //empty
 							$one2manyNew[$k] = [];
@@ -432,6 +433,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 						if(!($v instanceof ArrayIterator)){
 							$obj->$key = $v = new ArrayIterator($v);
 						}
+						$v->__exclusive($xclusive);
 						if(false!==$i=strpos($k,':')){ //via
 							$inter = substr($k,$i+1);
 							$k = substr($k,0,$i);
@@ -542,7 +544,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 						$except[] = $val->$pk;
 						
 				}
-				if($manyIteratorByK[$k]->__modified()){
+				if($v->__exclusive()&&$manyIteratorByK[$k]->__modified()){
 					$this->one2manyDeleteAll($obj,$k,$except);
 				}
 			}
@@ -571,7 +573,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 								$except[] = $id;
 							}
 						}
-						if($modified){
+						if($v->__exclusive()&&$modified){
 							$this->many2manyDeleteAll($obj,$t,$via,$except,$viaFk);
 						}
 					}
