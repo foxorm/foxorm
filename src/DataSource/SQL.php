@@ -1080,6 +1080,7 @@ abstract class SQL extends DataSource{
 		$params = [$obj->$pko];
 		if(!empty($except)){
 			$notIn = ' AND '.$pko.' NOT IN ?';
+			$except = array_unique($except);
 			$params[] = $except;
 		}
 		$this->execute('DELETE FROM '.$typeE.' WHERE '.$column.' = ?'.$notIn,$params);
@@ -1116,6 +1117,7 @@ abstract class SQL extends DataSource{
 		$params = [$obj->$pko];
 		if(!empty($except)){
 			$notIn = ' AND '.$tbj.'.'.$pke.' NOT IN ?';
+			$except = array_unique($except);
 			$params[] = $except;
 		}
 		$this->execute('DELETE FROM '.$tbj.' WHERE '.$tbj.'.'.$pke.' IN(
