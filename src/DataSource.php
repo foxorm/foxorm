@@ -358,7 +358,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 			}
 			
 			if($relation){
-				if(empty($v)) continue;
+				if(empty($v)&&!$update) continue;
 				switch($relation){
 					case 'oneByPK':
 						$pk = $this[$t]->getPrimaryKey();
@@ -399,6 +399,11 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 							$v = new ArrayIterator($v);
 						}
 						$v->__readingState(true);
+						if(!$v->valid()){ //empty
+							$one2manyNew[$k] = [];
+							$manyIteratorByK[$k] = $v;
+							$v->__modified(true);
+						}
 						foreach($v as $mk=>$val){
 							if(empty($val)&&(is_scalar($val)||is_null($val))) continue;
 							if(is_scalar($val))
@@ -433,6 +438,11 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 						}
 						else{
 							$inter = $this->many2manyTableName($type,$k);
+						}
+						if(!$v->valid()){ //empty
+							$many2manyNew[$k][$k][$inter] = [];
+							$manyIteratorByK[$k] = $v;
+							$v->__modified(true);
 						}
 						$typeColSuffix = $type==$k?'2':'';
 						$rc = $type.'_'.$primaryKey;
