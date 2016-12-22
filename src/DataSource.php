@@ -1,7 +1,7 @@
 <?php
 namespace FoxORM;
+use FoxORM\Collection;
 use FoxORM\Std\Cast;
-use FoxORM\Std\ArrayIterator;
 use FoxORM\Std\CaseConvert;
 use FoxORM\Std\ScalarInterface;
 use FoxORM\Entity\StateFollower;
@@ -344,7 +344,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 					continue;
 				}
 			}
-			elseif(is_array($v)||($v instanceof ArrayIterator)){
+			elseif(is_array($v)||($v instanceof Collection)){
 				$relation = 'many';
 			}
 			elseif(is_object($v)){
@@ -395,8 +395,8 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 						$obj->$key = $v;
 					break;
 					case 'many':
-						if(!($v instanceof ArrayIterator)){
-							$v = new ArrayIterator($v);
+						if(!($v instanceof Collection)){
+							$v = new Collection($v, $this, $k);
 						}
 						$v->__exclusive($xclusive);
 						$v->__readingState(true);
@@ -430,8 +430,8 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 						$obj->$key = $v;
 					break;
 					case 'many2many':
-						if(!($v instanceof ArrayIterator)){
-							$obj->$key = $v = new ArrayIterator($v);
+						if(!($v instanceof Collection)){
+							$obj->$key = $v = new Collection($v, $this, $k);
 						}
 						$v->__exclusive($xclusive);
 						if(false!==$i=strpos($k,':')){ //via
@@ -998,7 +998,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 	abstract function getCell($q, $bind = []);
 	
 	function getAllIterator($q, $bind){
-		return new ArrayIterator($this->getAll($q, $bind));
+		return new Collection($this->getAll($q, $bind), $this);
 	}
 	function getValidateService(){
 		return $this->bases->getValidateService();

@@ -1,8 +1,8 @@
 <?php
 namespace FoxORM;
+use FoxORM\Collection;
 use FoxORM\Helper\Pagination;
 use FoxORM\Std\Cast;
-use FoxORM\Std\ArrayIterator;
 use BadMethodCallException;
 abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSerializable{
 	private static $defaultEvents = [
@@ -183,17 +183,17 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 	}
 	function many($obj){
 		$many = $this->dataSource->one2many($obj,$this->name);
-		$many = new ArrayIterator($many);
+		$many = new Collection($many, $this->dataSource);
 		return $many;
 	}
 	function many2many($obj,$via=null){
 		$many = $this->dataSource->many2many($obj,$this->name,$via);
-		$many = new ArrayIterator($many);
+		$many = new Collection($many, $this->dataSource);
 		return $many;
 	}
 	function many2manyLink($obj,$via=null,$viaFk=null){
 		$many = $this->dataSource->many2manyLink($obj,$this->name,$via,$viaFk);
-		$many = new ArrayIterator($many);
+		$many = new Collection($many, $this->dataSource);
 		return $many;
 	}
 	
@@ -203,7 +203,7 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 	abstract function getCell();
 	
 	function getAllIterator(){
-		return new ArrayIterator($this->getAll());
+		return new Collection($this->getAll(), $this->dataSource);
 	}
 	
 	function on($event,$call=null,$index=0,$prepend=false){

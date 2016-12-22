@@ -1,7 +1,6 @@
 <?php
 namespace FoxORM\Entity;
 use FoxORM\Exception\ValidationException;
-use FoxORM\Std\ArrayIterator;
 class RulableModel extends Model implements RulableInterface {
 	protected $validatePreFilters = [];
 	protected $validateRules = [];

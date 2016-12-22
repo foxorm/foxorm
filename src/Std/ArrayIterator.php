@@ -8,9 +8,6 @@ use Countable;
 use stdClass;
 use BadMethodCallException;
 class ArrayIterator implements ArrayAccess,Iterator,JsonSerializable,Countable{
-	private $__readingState;
-	private $__modified = false;
-	private $__exclusive = false;
 	
 	protected $data = [];
 	function __construct($data=[]){
@@ -143,22 +140,6 @@ class ArrayIterator implements ArrayAccess,Iterator,JsonSerializable,Countable{
 		else if(is_object($this->data)){
 			$this->data = clone $this->data;
 		}
-	}
-	
-	function __exclusive($set=null){
-		if(isset($set)){
-			$this->__exclusive = (bool)$set;
-		}
-		return $this->__exclusive;
-	}
-	function __modified($set=null){
-		if(isset($set)){
-			$this->__modified = (bool)$set;
-		}
-		return $this->__modified;
-	}
-	function __readingState($b){
-		$this->__readingState = (bool)$b;
 	}
 	
 	function __call($f,$args){
