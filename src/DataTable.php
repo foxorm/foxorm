@@ -409,4 +409,8 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 		}
 		return true;
 	}
+	
+	function getTableWrapper(){
+		return $this->tableWrapper;
+	}
 }
