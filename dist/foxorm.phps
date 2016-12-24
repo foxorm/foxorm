@@ -6226,6 +6226,13 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 		}
 		return true;
 	}
+	
+	function method_exists($method){
+		return method_exists($this->tableWrapper,$method);
+	}
+	function getTableWrapper(){
+		return $this->tableWrapper;
+	}
 }
 }
 #DataTable/SQL.php
@@ -7658,8 +7665,13 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 				}
 				elseif(substr($k,0,11)==='_many2many_'){
 					$relationKey = substr($relationKey,11);
+					$via = null;
+					if(false!==$p=strpos($relationKey,':')){
+						$via = substr($relationKey,$p+1);
+						$relationKey = substr($relationKey,0,$p);
+					}
 					if($this->getId()){
-						$this->__data[$k] = $this->many2many($relationKey);
+						$this->__data[$k] = $this->many2many($relationKey,$via);
 					}
 					else{
 						$this->__data[$k] = [];
