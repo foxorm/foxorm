@@ -463,7 +463,6 @@ abstract class SQL extends DataSource{
 		return $this->runQuery( $sql, $bindings, [ 'noFetch' => true ] );
 	}
 	function affectedRows(){
-		$this->connect();
 		return (int) $this->affectedRows;
 	}
 	function getLogger(){
