@@ -559,7 +559,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 			}
 		}
 		foreach($many2manyNew as $t=>$v){
-			$clean = $manyIteratorByK[$k]->__exclusive()&&$manyIteratorByK[$t]->__modified();
+			$clean = $manyIteratorByK[$t]->__exclusive()&&$manyIteratorByK[$t]->__modified();
 			foreach($v as $k=>$viaLoop){
 				foreach($viaLoop as $via=>$val){
 					if($update){
