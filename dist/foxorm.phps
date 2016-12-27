@@ -156,7 +156,6 @@ class ArrayIterator implements ArrayAccess,Iterator,JsonSerializable,Countable{
 	}
 	
 	function offsetSet($k,$v){
-		if(!$this->__readingState) $this->__modified = true;
 		$this->__set($k,$v);
 	}
 	function &offsetGet($k){
@@ -166,7 +165,6 @@ class ArrayIterator implements ArrayAccess,Iterator,JsonSerializable,Countable{
 		return isset($this->data[$k]);
 	}
 	function offsetUnset($k){
-		if(!$this->__readingState) $this->__modified = true;
 		unset($this->data[$k]);
 	}
 	
@@ -1925,7 +1923,6 @@ abstract class SQL extends DataSource{
 		return $this->runQuery( $sql, $bindings, [ 'noFetch' => true ] );
 	}
 	function affectedRows(){
-		$this->connect();
 		return (int) $this->affectedRows;
 	}
 	function getLogger(){
