@@ -96,6 +96,11 @@ class ArrayIterator implements ArrayAccess,Iterator,JsonSerializable,Countable{
 		unset($this->data[$k]);
 	}
 	
+	function isEmpty(){
+		$this->iteratorSkipNull();
+		return !$this->valid();
+	}
+	
 	function setArray(array $data){
 		$this->data = $data;
 	}
