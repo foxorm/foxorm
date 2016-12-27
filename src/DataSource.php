@@ -400,7 +400,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 						}
 						$v->__exclusive($xclusive);
 						$v->__readingState(true);
-						if(!$v->isEmpty()){
+						if($v->isEmpty()){
 							$one2manyNew[$k] = [];
 							$manyIteratorByK[$k] = $v;
 							$v->__modified(true);
@@ -441,7 +441,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 						else{
 							$inter = $this->many2manyTableName($type,$k);
 						}
-						if(!$v->isEmpty()){
+						if($v->isEmpty()){
 							$many2manyNew[$k][$k][$inter] = [];
 							$manyIteratorByK[$k] = $v;
 							$v->__modified(true);
