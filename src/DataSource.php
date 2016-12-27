@@ -567,10 +567,16 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 						$viaFk = $k.'_'.$this[$t]->getPrimaryKey();
 						foreach($this->many2manyLink($obj,$t,$via,$viaFk) as $id=>$old){
 							$pk = $this[$via]->getPrimaryKey();
-							unset($old->$pk);
-							if(false!==$i=array_search($old,$val)){
-								$val[$i]->$pk = $id;
-								$except[] = $id;
+							foreach($val as $_val){
+								$_o = $_val[0];
+								$k1 = $_val[1];
+								$k2 = $_val[2];
+								$v3 = $_val[3];
+								if($old->$k2==$v3){
+									$_o->$pk = $id;
+									$except[] = $id;
+									break;
+								}
 							}
 						}
 						if($clean){
