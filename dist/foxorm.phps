@@ -168,6 +168,11 @@ class ArrayIterator implements ArrayAccess,Iterator,JsonSerializable,Countable{
 		unset($this->data[$k]);
 	}
 	
+	function isEmpty(){
+		$this->iteratorSkipNull();
+		return !$this->valid();
+	}
+	
 	function setArray(array $data){
 		$this->data = $data;
 	}
@@ -852,7 +857,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 						}
 						$v->__exclusive($xclusive);
 						$v->__readingState(true);
-						if(!$v->valid()){ //empty
+						if($v->isEmpty()){
 							$one2manyNew[$k] = [];
 							$manyIteratorByK[$k] = $v;
 							$v->__modified(true);
@@ -893,7 +898,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 						else{
 							$inter = $this->many2manyTableName($type,$k);
 						}
-						if(!$v->valid()){ //empty
+						if($v->isEmpty()){
 							$many2manyNew[$k][$k][$inter] = [];
 							$manyIteratorByK[$k] = $v;
 							$v->__modified(true);
@@ -1011,7 +1016,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 			}
 		}
 		foreach($many2manyNew as $t=>$v){
-			$clean = $manyIteratorByK[$k]->__exclusive()&&$manyIteratorByK[$t]->__modified();
+			$clean = $manyIteratorByK[$t]->__exclusive()&&$manyIteratorByK[$t]->__modified();
 			foreach($v as $k=>$viaLoop){
 				foreach($viaLoop as $via=>$val){
 					if($update){
