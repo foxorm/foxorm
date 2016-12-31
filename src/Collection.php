@@ -12,13 +12,12 @@ class Collection extends ArrayIterator {
 	protected $key;
 	protected $tableName;
 	
-	function __construct($data = [], DataSource $db, $key = null){
-		parent::__construct($data);
+	function __construct($data = [], DataSource $db, $tableName = null, $key = null){
 		$this->db = $db;
-		$this->key = $key;
-	}
-	function setTableName($tableName){
 		$this->tableName = $tableName;
+		$this->key = $key;
+		$data = $this->prepareData($data);
+		parent::__construct($data);
 	}
 	function __exclusive($set=null){
 		if(isset($set)){
@@ -42,5 +41,16 @@ class Collection extends ArrayIterator {
 	function offsetUnset($k){
 		if(!$this->__readingState) $this->__modified = true;
 		parent::offsetUnset($k);
+	}
+	protected function prepareData($data){
+		if($this->tableName&&is_array($data)&&key($data)!=0){
+			$pk = $this->db[$this->tableName]->getPrimaryKey();
+			foreach(array_keys($data) as $id){
+				if(!isset($data[$id][$pk])){
+					$data[$id][$pk] = $id;
+				}
+			}
+		}
+		return $data;
 	}
 }

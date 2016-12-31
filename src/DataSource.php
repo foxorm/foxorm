@@ -396,7 +396,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 					break;
 					case 'many':
 						if(!($v instanceof Collection)){
-							$v = new Collection($v, $this, $k);
+							$v = new Collection($v, $this, $k, $key);
 						}
 						$v->__exclusive($xclusive);
 						$v->__readingState(true);
@@ -430,10 +430,6 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 						$obj->$key = $v;
 					break;
 					case 'many2many':
-						if(!($v instanceof Collection)){
-							$obj->$key = $v = new Collection($v, $this, $k);
-						}
-						$v->__exclusive($xclusive);
 						if(false!==$i=strpos($k,':')){ //via
 							$inter = substr($k,$i+1);
 							$k = substr($k,0,$i);
@@ -441,6 +437,12 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 						else{
 							$inter = $this->many2manyTableName($type,$k);
 						}
+						
+						if(!($v instanceof Collection)){
+							$obj->$key = $v = new Collection($v, $this, $k, $key);
+						}
+						$v->__exclusive($xclusive);
+						
 						if($v->isEmpty()){
 							$many2manyNew[$k][$k][$inter] = [];
 							$manyIteratorByK[$k] = $v;
