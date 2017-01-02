@@ -1022,6 +1022,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		return [$k,$xclusive];
 	}
 	function extractMetaFromKey($k){
+		list($k,$xclusive) = $this->extractCascadeFromKey($k);
 		$meta = substr($k,0,1)=='_';
 		if($meta){
 			$x = explode('_',substr($k,1));
@@ -1030,6 +1031,6 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 				$k = implode('_',$x);
 			}
 		}
-		return [$k,$meta];
+		return [$k,$meta,$xclusive];
 	}
 }
