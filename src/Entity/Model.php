@@ -97,15 +97,10 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 	}
 	function &__get($k){
 		if(!array_key_exists($k,$this->__data)){
-			if(substr($k,0,1)==='_'){
-				$relationKey = $k;
-				
-				list($relationKey,$xclusive) = $this->db->extractCascadeFromKey($relationKey);
-					
-				if(substr($k,0,5)==='_one_'){
-					$relationKey = substr($relationKey,5);
-					
-					
+			
+			list($relationKey,$meta,$xclusive) = $this->db->extractMetaFromKey($k);
+			switch($meta){
+				case 'one':
 					$relationTable = $this->db[$relationKey];
 					$relationFk = $relationKey.'_'.$relationTable->getPrimaryKey();
 					if(isset($this->data[$relationFk])&&$this->data[$relationFk]){
@@ -117,9 +112,8 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 					}
 					
 					$this->__cursor[$k] = &$this->__data[$k];
-				}
-				elseif(substr($k,0,6)==='_many_'){
-					$relationKey = substr($relationKey,6);
+				break;
+				case 'many':
 					if($this->getId()){
 						$this->__data[$k] = $this->many($relationKey);
 					}
@@ -127,9 +121,8 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 						$this->__data[$k] = [];
 					}
 					$this->__cursor[$k] = &$this->__data[$k];
-				}
-				elseif(substr($k,0,11)==='_many2many_'){
-					$relationKey = substr($relationKey,11);
+				break;
+				case 'many2many':
 					$via = null;
 					if(false!==$p=strpos($relationKey,':')){
 						$via = substr($relationKey,$p+1);
@@ -142,8 +135,8 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 						$this->__data[$k] = [];
 					}
 					$this->__cursor[$k] = &$this->__data[$k];
-				}
-				elseif(substr($k,0,15)==='_many2manyLink_'){
+				break;
+				case 'many2manyLink':
 					$relationKey = substr($relationKey,15);
 					if($this->getId()){
 						$this->__data[$k] = $this->many2manyLink($relationKey);
@@ -152,32 +145,32 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 						$this->__data[$k] = [];
 					}
 					$this->__cursor[$k] = &$this->__data[$k];
-				}
-				elseif($pkOf=$this->db->isPrimaryKeyOf($k)){
-					$k1 = '_one_'.$pkOf;
-					$k2 = '_xone_'.$pkOf;
-					$k3 = '_one_'.$pkOf.'_x_';
-					$pk = $this->db[$pkOf]->getPrimaryKey();
-					if(array_key_exists($k1,$this->__data)){
-						$this->__data[$k] = $this->__data[$k1]->$pk;
-					}
-					elseif(array_key_exists($k2,$this->__data)){
-						$this->__data[$k] = $this->__data[$k2]->$pk;
-					}
-					elseif(array_key_exists($k3,$this->__data)){
-						$this->__data[$k] = $this->__data[$k3]->$pk;
+				break;
+				default:
+					if($pkOf=$this->db->isPrimaryKeyOf($k)){
+						$k1 = '_one_'.$pkOf;
+						$k2 = '_xone_'.$pkOf;
+						$k3 = '_one_'.$pkOf.'_x_';
+						$pk = $this->db[$pkOf]->getPrimaryKey();
+						if(array_key_exists($k1,$this->__data)){
+							$this->__data[$k] = $this->__data[$k1]->$pk;
+						}
+						elseif(array_key_exists($k2,$this->__data)){
+							$this->__data[$k] = $this->__data[$k2]->$pk;
+						}
+						elseif(array_key_exists($k3,$this->__data)){
+							$this->__data[$k] = $this->__data[$k3]->$pk;
+						}
+						else{
+							$this->__data[$k] = $this->getValueOf($k);
+						}
 					}
 					else{
 						$this->__data[$k] = $this->getValueOf($k);
 					}
-				}
-				else{
-					$this->__data[$k] = $this->getValueOf($k);
-				}
+				break;
 			}
-			else{
-				$this->__data[$k] = $this->getValueOf($k);
-			}
+
 		}
 		return $this->__data[$k];
 	}

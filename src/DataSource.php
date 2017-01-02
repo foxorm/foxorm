@@ -311,8 +311,9 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		}
 		
 		foreach($obj as $key=>$v){
-			$k = $key;
-			list($k,$xclusive) = $this->extractCascadeFromKey($k);
+			
+			list($k,$meta,$xclusive) = $this->extractMetaFromKey($key);
+			//dd($k,$meta,$xclusive);
 			
 			$relation = false;
 			
@@ -320,41 +321,39 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 				$v = Cast::scalar($v);
 			}
 			
-			if(substr($k,0,1)=='_'){
-				if(substr($k,1,4)=='one_'){
-					$k = substr($k,5);
-					$relation = 'one';
-				}
-				elseif(substr($k,1,5)=='many_'){
-					$k = substr($k,6);
-					$relation = 'many';
-				}
-				elseif(substr($k,1,10)=='many2many_'){
-					$k = substr($k,11);
-					$relation = 'many2many';
-				}
-				else{
-					if(substr($k,1,5)=='cast_'){
-						$cast[substr($k,6)] = $v;
+			switch($meta){
+				case true:
+				continue 2;
+				
+				case 'one':
+				case 'many':
+				case 'many2many':
+					$relation = $meta;
+				break;
+				
+				case 'cast':
+					$cast[substr($k,6)] = $v;
+				continue 2;
+				case 'func':
+					$func[substr($k,6)] = $v;
+				continue 2;
+				
+				default:
+					if(is_array($v)||($v instanceof Collection)){
+						$relation = 'many';
 					}
-					if(substr($k,1,5)=='func_'){
-						$func[substr($k,6)] = $v;
+					elseif(is_object($v)){
+						$relation = 'one';
 					}
-					continue;
-				}
+					elseif($t = $this->isPrimaryKeyOf($k)){
+						if(isset($obj->{'_one_'.$t})){
+							continue 2;
+						}
+						$relation = 'oneByPK';
+					}
+				break;
 			}
-			elseif(is_array($v)||($v instanceof Collection)){
-				$relation = 'many';
-			}
-			elseif(is_object($v)){
-				$relation = 'one';
-			}
-			elseif($t = $this->isPrimaryKeyOf($k)){
-				if(isset($obj->{'_one_'.$t})){
-					continue;
-				}
-				$relation = 'oneByPK';
-			}
+			
 			
 			if($relation){
 				if(empty($v)&&!$update) continue;
@@ -1017,7 +1016,9 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		}
 		else{
 			$xclusive = substr($k,0,2)=='_x';
-			$k = '_'.substr($k,2);
+			if($xclusive){
+				$k = '_'.substr($k,2);
+			}
 		}
 		return [$k,$xclusive];
 	}
