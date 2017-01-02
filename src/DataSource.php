@@ -312,14 +312,8 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		
 		foreach($obj as $key=>$v){
 			$k = $key;
-			$xclusive = substr($k,-3)=='_x_';
-			if($xclusive){
-				$k = substr($k,0,-3);
-			}
-			else{
-				$xclusive = substr($k,0,2)=='_x';
-				$k = '_'.substr($k,2);
-			}
+			list($k,$xclusive) = $this->extractCascadeFromKey($k);
+			
 			$relation = false;
 			
 			if(Cast::isScalar($v)){
@@ -1015,5 +1009,16 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 	}
 	function getValidateService(){
 		return $this->bases->getValidateService();
+	}
+	function extractCascadeFromKey($k){
+		$xclusive = substr($k,-3)=='_x_';
+		if($xclusive){
+			$k = substr($k,0,-3);
+		}
+		else{
+			$xclusive = substr($k,0,2)=='_x';
+			$k = '_'.substr($k,2);
+		}
+		return [$k,$xclusive];
 	}
 }
