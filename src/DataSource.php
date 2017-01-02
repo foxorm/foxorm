@@ -312,8 +312,8 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		
 		foreach($obj as $key=>$v){
 			
-			list($k,$meta,$xclusive) = $this->extractMetaFromKey($key);
-			//dd($k,$meta,$xclusive);
+			list($k,$meta,$xclusive,$push) = $this->extractMetaFromKey($key);
+			//dd($k,$meta,$xclusive,$push);
 			
 			$relation = false;
 			
@@ -398,6 +398,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 						}
 						$v->__exclusive($xclusive);
 						$v->__readingState(true);
+						$v->__push($push);
 						if($v->isEmpty()){
 							$one2manyNew[$k] = [];
 							$manyIteratorByK[$k] = $v;
@@ -440,6 +441,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 							$obj->$key = $v = new Collection($v, $this, $k, $key);
 						}
 						$v->__exclusive($xclusive);
+						$v->__push($push);
 						
 						if($v->isEmpty()){
 							$many2manyNew[$k][$k][$inter] = [];
