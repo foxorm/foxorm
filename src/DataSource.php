@@ -313,7 +313,6 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		foreach($obj as $key=>$v){
 			
 			list($k,$meta,$xclusive,$push) = $this->extractMetaFromKey($key);
-			//dd($k,$meta,$xclusive,$push);
 			
 			$relation = false;
 			
@@ -322,7 +321,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 			}
 			
 			switch($meta){
-				case true:
+				case is_bool($meta):
 				continue 2;
 				
 				case 'one':
