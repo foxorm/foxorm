@@ -1021,15 +1021,15 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		}
 		return [$k,$xclusive];
 	}
-	function extractMetaFromKey(){
+	function extractMetaFromKey($k){
 		$meta = substr($k,0,1)=='_';
 		if($meta){
 			$x = explode('_',substr($k,1));
 			if(count($x)>1){
 				$meta = array_shift($x);
-				$key = implode('_',$x);
+				$k = implode('_',$x);
 			}
 		}
-		return [$key,$meta];
+		return [$k,$meta];
 	}
 }
