@@ -7,6 +7,7 @@ class Collection extends ArrayIterator {
 	private $__readingState;
 	private $__modified = false;
 	private $__exclusive = false;
+	private $__push = false;
 	
 	protected $db;
 	protected $key;
@@ -31,11 +32,17 @@ class Collection extends ArrayIterator {
 		}
 		return $this->__modified;
 	}
+	function __push($set=null){
+		if(isset($set)){
+			$this->__push = (bool)$set;
+		}
+		return $this->__push;
+	}
 	function __readingState($b){
 		$this->__readingState = (bool)$b;
 	}
 	function __clean(){
-		return $this->__modified&&$this->__exclusive;
+		return $this->__modified&&$this->__exclusive&&!$this->__push;
 	}
 	function offsetSet($k,$v){
 		if(!$this->__readingState) $this->__modified = true;
