@@ -546,7 +546,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 						$except[] = $val->$pk;
 						
 				}
-				if($manyIteratorByK[$k]->__exclusive()&&$manyIteratorByK[$k]->__modified()){
+				if($manyIteratorByK[$k]->__clean()){
 					$this->one2manyDeleteAll($obj,$k,$except);
 				}
 			}
@@ -561,7 +561,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 			}
 		}
 		foreach($many2manyNew as $t=>$v){
-			$clean = $manyIteratorByK[$t]->__exclusive()&&$manyIteratorByK[$t]->__modified();
+			$clean = $manyIteratorByK[$t]->__clean();
 			foreach($v as $k=>$viaLoop){
 				foreach($viaLoop as $via=>$val){
 					if($update){

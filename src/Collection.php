@@ -34,6 +34,9 @@ class Collection extends ArrayIterator {
 	function __readingState($b){
 		$this->__readingState = (bool)$b;
 	}
+	function __clean(){
+		return $this->__modified&&$this->__exclusive;
+	}
 	function offsetSet($k,$v){
 		if(!$this->__readingState) $this->__modified = true;
 		parent::offsetSet($k,$v);
