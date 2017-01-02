@@ -45,11 +45,13 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 		if(!$this->__readingState&&!$meta&&(!isset($this->__data[$k])||$this->__data[$k]!=$v)&&Cast::isScalar($v)){
 			$this->_modified = true;
 		}
-		if($meta&&substr($k,0,5)==='_one_'){
+		
+		
+		if($meta&&(substr($k,0,5)==='_one_'||substr($k,0,6)==='_xone_')){
 			$relationKey = $k;
-			$xclusive = substr($relationKey,-3)=='_x_';
-			if($xclusive)
-				$relationKey = substr($relationKey,0,-3);
+			
+			list($relationKey,$xclusive) = $this->db->extractCascadeFromKey($relationKey);
+			
 			$relationKey = substr($relationKey,5);
 			$pk = $this->db[$relationKey]->getPrimaryKey();
 			if(!$v||Cast::isInt($v)){
@@ -77,13 +79,17 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 		}
 		elseif($pkOf=$this->db->isPrimaryKeyOf($k)){
 			$k1 = '_one_'.$pkOf;
-			$k2 = '_one_'.$pkOf.'_x_';
+			$k2 = '_xone_'.$pkOf;
+			$k3 = '_one_'.$pkOf.'_x_';
 			$pk = $this->db[$pkOf]->getPrimaryKey();
 			if(array_key_exists($k1,$this->__data)){
 				$this->__data[$k1] = $v;
 			}
 			if(array_key_exists($k2,$this->__data)){
 				$this->__data[$k2] = $v;
+			}
+			if(array_key_exists($k3,$this->__data)){
+				$this->__data[$k3] = $v;
 			}
 		}
 		$this->__cursor[$k] = &$this->__data[$k];
@@ -93,9 +99,9 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 		if(!array_key_exists($k,$this->__data)){
 			if(substr($k,0,1)==='_'){
 				$relationKey = $k;
-				$xclusive = substr($relationKey,-3)=='_x_';
-				if($xclusive)
-					$relationKey = substr($relationKey,0,-3);
+				
+				list($relationKey,$xclusive) = $this->db->extractCascadeFromKey($relationKey);
+					
 				if(substr($k,0,5)==='_one_'){
 					$relationKey = substr($relationKey,5);
 					
@@ -149,13 +155,17 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 				}
 				elseif($pkOf=$this->db->isPrimaryKeyOf($k)){
 					$k1 = '_one_'.$pkOf;
-					$k2 = '_one_'.$pkOf.'_x_';
+					$k2 = '_xone_'.$pkOf;
+					$k3 = '_one_'.$pkOf.'_x_';
 					$pk = $this->db[$pkOf]->getPrimaryKey();
 					if(array_key_exists($k1,$this->__data)){
 						$this->__data[$k] = $this->__data[$k1]->$pk;
 					}
 					elseif(array_key_exists($k2,$this->__data)){
 						$this->__data[$k] = $this->__data[$k2]->$pk;
+					}
+					elseif(array_key_exists($k3,$this->__data)){
+						$this->__data[$k] = $this->__data[$k3]->$pk;
 					}
 					else{
 						$this->__data[$k] = $this->getValueOf($k);
@@ -286,6 +296,7 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 		if($this->$id) return $this->$id;
 		if(
 				( isset($this->{'_one_'.$type})&&($o=$this->{'_one_'.$type}) )
+			||	( isset($this->{'_xone_'.$type})&&($o=$this->{'_xone_'.$type}) )
 			||	( isset($this->{'_one_'.$type.'_x_'})&&($o=$this->{'_one_'.$type.'_x_'}) )
 		){
 			if(Cast::isScalar($o)){
