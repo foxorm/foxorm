@@ -369,6 +369,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 					case 'one':
 						if(is_scalar($v)){
 							$v = $this->scalarToArray($v,$k);
+							$v['_modified'] = false;
 						}
 						if(is_array($v)){
 							$v = $this->arrayToEntity($v,$k);
