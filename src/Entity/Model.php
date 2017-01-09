@@ -74,6 +74,7 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 					$v2 = $id;
 					$this->__cursor[$k2] = &$this->__data[$k2];
 					$this->__data[$k2] = $v2;
+					$this->_modified = true;
 				}
 			}
 		}
