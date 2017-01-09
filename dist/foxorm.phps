@@ -777,6 +777,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 				$v = Cast::scalar($v);
 			}
 			
+			
 			switch($meta){
 				case is_bool($meta):
 				continue 2;
@@ -823,11 +824,13 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 						$properties[$k] = $v;
 					break;
 					case 'one':
-						if(is_scalar($v))
+						if(is_scalar($v)){
 							$v = $this->scalarToArray($v,$k);
-						if(is_array($v))
+							$v['_modified'] = false;
+						}
+						if(is_array($v)){
 							$v = $this->arrayToEntity($v,$k);
-						
+						}
 						$t = isset($v->_type)?$v->_type:$k;
 						$tAlias = $k?$k:$t;
 						
@@ -969,7 +972,9 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 			$modified = true;
 			if($update){
 				$r = $this->updateQuery($type,$properties,$id,$primaryKey,$uniqTextKey,$cast,$func,$scope);
-				$obj->$primaryKey = $r;
+				if($r){
+					$obj->$primaryKey = $r;
+				}
 				if($obj instanceof StateFollower||isset($obj->_modified))
 					$obj->_modified = false;
 				$this->trigger($type,'afterUpdate',$obj);
@@ -7658,6 +7663,7 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 					$v2 = $id;
 					$this->__cursor[$k2] = &$this->__data[$k2];
 					$this->__data[$k2] = $v2;
+					$this->_modified = true;
 				}
 			}
 		}
