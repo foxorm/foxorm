@@ -18,10 +18,7 @@ class RulableModel extends Model implements RulableInterface {
 					$this->__unset($k);
 				}
 				else{
-					$e = new ValidationException('Property '.$k.' not allowed for entity of type "'.$this->_type.'" by model class "'.get_class().'"');
-					$e->setEntity($this);
-					$e->setDB($this->db);
-					throw $e;
+					$this->throwValidationException('Property '.$k.' not allowed for entity of type "'.$this->_type.'" by model class "'.get_class().'"');
 				}
 			}
 		}
