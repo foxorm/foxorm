@@ -1220,9 +1220,9 @@ abstract class SQL extends DataSource{
 		if($row){
 			foreach($row as $k=>$v)
 				$obj->$k = $v;
+			$this->trigger($type,'afterRead',$obj);
+			$this->trigger($type,'unserializeColumns',$obj);
 		}
-		$this->trigger($type,'afterRead',$obj);
-		$this->trigger($type,'unserializeColumns',$obj);
 		if($obj instanceof StateFollower)
 			$obj->__readingState(false);
 		if($row)

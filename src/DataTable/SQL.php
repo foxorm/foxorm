@@ -239,9 +239,9 @@ class SQL extends DataTable{
 				$pk = isset($this->row->{$this->getPrimaryKey()})?$this->row->{$this->getPrimaryKey()}:count($this->data)+1;
 				$this->data[$pk] = $this->row;
 			}
+			$this->trigger('afterRead',$this->row);
+			$this->trigger('unserializeColumns',$this->row);
 		}
-		$this->trigger('afterRead',$this->row);
-		$this->trigger('unserializeColumns',$this->row);
 		if($this->row instanceof StateFollower)
 			$this->row->__readingState(false);
 		if(!$row){
