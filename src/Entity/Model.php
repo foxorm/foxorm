@@ -4,6 +4,7 @@ use FoxORM\Std\ScalarInterface;
 use FoxORM\Std\Cast;
 use FoxORM\DataSource;
 use FoxORM\Entity\StateFollower;
+use FoxORM\Exception\ValidationException;
 class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable{
 	private $__readingState;
 	private $__data = [];
@@ -429,5 +430,11 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 	function getId(){
 		$pk = $this->_table->getPrimaryKey();
 		return isset($this->__data[$pk])?$this->__data[$pk]:null;
+	}
+	function throwValidationException($message){
+		$e = new ValidationException($message);
+		$e->setEntity($this);
+		$e->setDB($this->db);
+		throw $e;
 	}
 }
