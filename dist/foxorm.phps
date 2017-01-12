@@ -6446,8 +6446,22 @@ class SQL extends DataTable{
 		$table = [];
 		if($this->hasSelectRelational)
 			$all = $this->dataSource->explodeAggTable($all);
-		foreach($all as $row){
-			$row = $this->dataSource->arrayToEntity($row,$this->name);
+		foreach($all as $a){
+			
+			//$row = $this->dataSource->arrayToEntity($row,$this->name);
+			
+			$row = $this->dataSource->entityFactory($this->name);
+			if($row instanceof StateFollower)
+				$row->__readingState(true);
+			$this->trigger('beforeRead',$row);
+			foreach($a as $k=>$v)
+				$row->$k = $v;
+			$this->trigger('afterRead',$row);
+			$this->trigger('unserializeColumns',$row);
+			if($row instanceof StateFollower)
+				$row->__readingState(false);
+			
+			
 			if(isset($row->{$this->getPrimaryKey()}))
 				$table[$row->{$this->getPrimaryKey()}] = $row;
 			else
@@ -6458,8 +6472,21 @@ class SQL extends DataTable{
 	function collectionToEntity($row){
 		if($this->hasSelectRelational)
 			$row = $this->dataSource->explodeAgg($row);
-		if($row)
-			$row = $this->dataSource->arrayToEntity($row,$this->name);
+		if($row){
+			//$row = $this->dataSource->arrayToEntity($row,$this->name);
+			$a = $row;
+			
+			$row = $this->dataSource->entityFactory($this->name);
+			if($row instanceof StateFollower)
+				$row->__readingState(true);
+			$this->trigger('beforeRead',$row);
+			foreach($a as $k=>$v)
+				$row->$k = $v;
+			$this->trigger('afterRead',$row);
+			$this->trigger('unserializeColumns',$row);
+			if($row instanceof StateFollower)
+				$row->__readingState(false);
+		}
 		return $row;
 	}
 	
@@ -7593,6 +7620,7 @@ use FoxORM\Std\ScalarInterface;
 use FoxORM\Std\Cast;
 use FoxORM\DataSource;
 use FoxORM\Entity\StateFollower;
+use FoxORM\Exception\ValidationException;
 class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable{
 	private $__readingState;
 	private $__data = [];
@@ -8019,6 +8047,12 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 		$pk = $this->_table->getPrimaryKey();
 		return isset($this->__data[$pk])?$this->__data[$pk]:null;
 	}
+	function throwValidationException($message){
+		$e = new ValidationException($message);
+		$e->setEntity($this);
+		$e->setDB($this->db);
+		throw $e;
+	}
 }
 }
 #Entity/RulableInterface.php
@@ -8055,10 +8089,7 @@ class RulableModel extends Model implements RulableInterface {
 					$this->__unset($k);
 				}
 				else{
-					$e = new ValidationException('Property '.$k.' not allowed for entity of type "'.$this->_type.'" by model class "'.get_class().'"');
-					$e->setEntity($this);
-					$e->setDB($this->db);
-					throw $e;
+					$this->throwValidationException('Property '.$k.' not allowed for entity of type "'.$this->_type.'" by model class "'.get_class().'"');
 				}
 			}
 		}
