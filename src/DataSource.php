@@ -29,6 +29,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 	protected $primaryKeys;
 	protected $uniqTextKeys;
 	protected $many2manyPrefix;
+	protected $integerSuffixAsPolymorphism;
 	protected $tableMap = [];
 	protected $entityFactory;
 	protected $tableWrapperFactory;
@@ -38,7 +39,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 	protected $debugLevel;
 	protected $performingSystemQuery = false;
 	protected $performingOptionalQuery = false;
-	function __construct(Bases $bases,$type,$modelClassPrefix='Model\\',$entityClassDefault='stdClass',$primaryKey='id',$uniqTextKey='uniq',array $primaryKeys=[],array $uniqTextKeys=[],$many2manyPrefix='',$tableWrapperClassDefault=false,$debugLevel=self::DEBUG_DEFAULT,array $config=[]){
+	function __construct(Bases $bases,$type,$modelClassPrefix='Model\\',$entityClassDefault='stdClass',$primaryKey='id',$uniqTextKey='uniq',array $primaryKeys=[],array $uniqTextKeys=[],$many2manyPrefix='',$tableWrapperClassDefault=false,$debugLevel=self::DEBUG_DEFAULT,array $config=[],$integerSuffixAsPolymorphism=true){
 		$this->bases = $bases;
 		$this->type = $type;
 		$this->modelClassPrefix = (array)$modelClassPrefix;
@@ -49,6 +50,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		$this->primaryKeys = $primaryKeys;
 		$this->uniqTextKeys = $uniqTextKeys;
 		$this->many2manyPrefix = $many2manyPrefix;
+		$this->integerSuffixAsPolymorphism = $integerSuffixAsPolymorphism;
 		$this->debugLevel = $debugLevel;
 		$this->construct($config);
 	}

@@ -15,9 +15,10 @@ class Bases implements \ArrayAccess{
 	private $uniqTextKeys;
 	private $many2manyPrefix;
 	private $tableWrapperClassDefault;
+	private $integerSuffixAsPolymorphism;
 	private $debug;
 	private $validateService;
-	function __construct(array $map = [],$modelClassPrefix='Model\\',$entityClassDefault='stdClass',$primaryKeyDefault='id',$uniqTextKeyDefault='uniq',array $primaryKeys=[],array $uniqTextKeys=[],$many2manyPrefix='',$tableWrapperClassDefault=false,$debug=DataSource::DEBUG_DEFAULT){
+	function __construct(array $map = [],$modelClassPrefix='Model\\',$entityClassDefault='stdClass',$primaryKeyDefault='id',$uniqTextKeyDefault='uniq',array $primaryKeys=[],array $uniqTextKeys=[],$many2manyPrefix='',$tableWrapperClassDefault=false,$integerSuffixAsPolymorphism=true,$debug=DataSource::DEBUG_DEFAULT){
 		$this->map = $map;
 		$this->modelClassPrefix = (array)$modelClassPrefix;
 		$this->entityClassDefault = $entityClassDefault;
@@ -27,6 +28,7 @@ class Bases implements \ArrayAccess{
 		$this->uniqTextKeys = $uniqTextKeys;
 		$this->many2manyPrefix = $many2manyPrefix;
 		$this->tableWrapperClassDefault = $tableWrapperClassDefault;
+		$this->integerSuffixAsPolymorphism = $integerSuffixAsPolymorphism;
 		$this->debug = $debug;
 		
 		if(class_exists(Validate::class)){
@@ -104,6 +106,7 @@ class Bases implements \ArrayAccess{
 		$uniqTextKeys = $this->uniqTextKeys;
 		$many2manyPrefix = $this->many2manyPrefix;
 		$tableWrapperClassDefault = $this->tableWrapperClassDefault;
+		$integerSuffixAsPolymorphism = $this->integerSuffixAsPolymorphism;
 		$debug = $this->debug;
 		
 		if(isset($config['type'])){
@@ -149,13 +152,17 @@ class Bases implements \ArrayAccess{
 			$many2manyPrefix = $config['many2manyPrefix'];
 			unset($config['many2manyPrefix']);
 		}
+		if(isset($config['integerSuffixAsPolymorphism'])){
+			$integerSuffixAsPolymorphism = $config['integerSuffixAsPolymorphism'];
+			unset($config['integerSuffixAsPolymorphism']);
+		}
 		if(isset($config['debug'])){
 			$debug = $config['debug'];
 			unset($config['debug']);
 		}
 		
 		$class = __NAMESPACE__.'\\DataSource\\'.ucfirst($type);
-		$dataSource = new $class($this,$type,$modelClassPrefix,$entityClassDefault,$primaryKey,$uniqTextKey,$primaryKeys,$uniqTextKeys,$many2manyPrefix,$tableWrapperClassDefault,$debug,$config);
+		$dataSource = new $class($this,$type,$modelClassPrefix,$entityClassDefault,$primaryKey,$uniqTextKey,$primaryKeys,$uniqTextKeys,$many2manyPrefix,$tableWrapperClassDefault,$debug,$config,$integerSuffixAsPolymorphism);
 		if($this->entityFactory){
 			$dataSource->setEntityFactory($this->entityFactory);
 		}
