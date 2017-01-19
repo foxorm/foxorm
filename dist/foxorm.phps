@@ -300,9 +300,10 @@ class Bases implements \ArrayAccess{
 	private $uniqTextKeys;
 	private $many2manyPrefix;
 	private $tableWrapperClassDefault;
+	private $integerSuffixAsPolymorphism;
 	private $debug;
 	private $validateService;
-	function __construct(array $map = [],$modelClassPrefix='Model\\',$entityClassDefault='stdClass',$primaryKeyDefault='id',$uniqTextKeyDefault='uniq',array $primaryKeys=[],array $uniqTextKeys=[],$many2manyPrefix='',$tableWrapperClassDefault=false,$debug=DataSource::DEBUG_DEFAULT){
+	function __construct(array $map = [],$modelClassPrefix='Model\\',$entityClassDefault='stdClass',$primaryKeyDefault='id',$uniqTextKeyDefault='uniq',array $primaryKeys=[],array $uniqTextKeys=[],$many2manyPrefix='',$tableWrapperClassDefault=false,$integerSuffixAsPolymorphism=true,$debug=DataSource::DEBUG_DEFAULT){
 		$this->map = $map;
 		$this->modelClassPrefix = (array)$modelClassPrefix;
 		$this->entityClassDefault = $entityClassDefault;
@@ -312,6 +313,7 @@ class Bases implements \ArrayAccess{
 		$this->uniqTextKeys = $uniqTextKeys;
 		$this->many2manyPrefix = $many2manyPrefix;
 		$this->tableWrapperClassDefault = $tableWrapperClassDefault;
+		$this->integerSuffixAsPolymorphism = $integerSuffixAsPolymorphism;
 		$this->debug = $debug;
 		
 		if(class_exists(Validate::class)){
@@ -389,6 +391,7 @@ class Bases implements \ArrayAccess{
 		$uniqTextKeys = $this->uniqTextKeys;
 		$many2manyPrefix = $this->many2manyPrefix;
 		$tableWrapperClassDefault = $this->tableWrapperClassDefault;
+		$integerSuffixAsPolymorphism = $this->integerSuffixAsPolymorphism;
 		$debug = $this->debug;
 		
 		if(isset($config['type'])){
@@ -434,13 +437,17 @@ class Bases implements \ArrayAccess{
 			$many2manyPrefix = $config['many2manyPrefix'];
 			unset($config['many2manyPrefix']);
 		}
+		if(isset($config['integerSuffixAsPolymorphism'])){
+			$integerSuffixAsPolymorphism = $config['integerSuffixAsPolymorphism'];
+			unset($config['integerSuffixAsPolymorphism']);
+		}
 		if(isset($config['debug'])){
 			$debug = $config['debug'];
 			unset($config['debug']);
 		}
 		
 		$class = __NAMESPACE__.'\\DataSource\\'.ucfirst($type);
-		$dataSource = new $class($this,$type,$modelClassPrefix,$entityClassDefault,$primaryKey,$uniqTextKey,$primaryKeys,$uniqTextKeys,$many2manyPrefix,$tableWrapperClassDefault,$debug,$config);
+		$dataSource = new $class($this,$type,$modelClassPrefix,$entityClassDefault,$primaryKey,$uniqTextKey,$primaryKeys,$uniqTextKeys,$many2manyPrefix,$tableWrapperClassDefault,$debug,$config,$integerSuffixAsPolymorphism);
 		if($this->entityFactory){
 			$dataSource->setEntityFactory($this->entityFactory);
 		}
@@ -486,6 +493,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 	protected $primaryKeys;
 	protected $uniqTextKeys;
 	protected $many2manyPrefix;
+	protected $integerSuffixAsPolymorphism;
 	protected $tableMap = [];
 	protected $entityFactory;
 	protected $tableWrapperFactory;
@@ -495,7 +503,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 	protected $debugLevel;
 	protected $performingSystemQuery = false;
 	protected $performingOptionalQuery = false;
-	function __construct(Bases $bases,$type,$modelClassPrefix='Model\\',$entityClassDefault='stdClass',$primaryKey='id',$uniqTextKey='uniq',array $primaryKeys=[],array $uniqTextKeys=[],$many2manyPrefix='',$tableWrapperClassDefault=false,$debugLevel=self::DEBUG_DEFAULT,array $config=[]){
+	function __construct(Bases $bases,$type,$modelClassPrefix='Model\\',$entityClassDefault='stdClass',$primaryKey='id',$uniqTextKey='uniq',array $primaryKeys=[],array $uniqTextKeys=[],$many2manyPrefix='',$tableWrapperClassDefault=false,$debugLevel=self::DEBUG_DEFAULT,array $config=[],$integerSuffixAsPolymorphism=true){
 		$this->bases = $bases;
 		$this->type = $type;
 		$this->modelClassPrefix = (array)$modelClassPrefix;
@@ -506,6 +514,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		$this->primaryKeys = $primaryKeys;
 		$this->uniqTextKeys = $uniqTextKeys;
 		$this->many2manyPrefix = $many2manyPrefix;
+		$this->integerSuffixAsPolymorphism = $integerSuffixAsPolymorphism;
 		$this->debugLevel = $debugLevel;
 		$this->construct($config);
 	}
@@ -818,7 +827,16 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 					case 'oneByPK':
 						$pk = $this[$t]->getPrimaryKey();
 						$rc = $t.'_'.$pk;
-						$addFK = [$type,$t,$rc,$pk,$xclusive];
+						$relType = $t;
+						
+						if($this->integerSuffixAsPolymorphism){
+							$polymorphism = $this->explodeIntegerSuffix($t);
+							if(count($polymorphism)>1){
+								list($relType,$index) = $polymorphism;
+							}
+						}
+						
+						$addFK = [$type,$relType,$rc,$pk,$xclusive];
 						if(!in_array($addFK,$fk))
 							$fk[] = $addFK;
 						$properties[$k] = $v;
@@ -828,6 +846,20 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 							$v = $this->scalarToArray($v,$k);
 							$v['_modified'] = false;
 						}
+						
+						if($this->integerSuffixAsPolymorphism){
+							$polymorphism = $this->explodeIntegerSuffix($k);
+							if(count($polymorphism)>1){
+								list($relType,$index) = $polymorphism;
+								if(is_array($v)){
+									$v['_type'] = $relType;
+								}
+								else{
+									$v->_type = $relType;
+								}
+							}
+						}
+						
 						if(is_array($v)){
 							$v = $this->arrayToEntity($v,$k);
 						}
@@ -1505,6 +1537,9 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 			}
 		}
 		return [$k,$meta,$xclusive,$push];
+	}
+	function explodeIntegerSuffix($k){
+		return preg_split('/(\d+)$/', $k, -1, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE);
 	}
 }
 }
@@ -2731,9 +2766,9 @@ abstract class SQL extends DataSource{
 		if($row){
 			foreach($row as $k=>$v)
 				$obj->$k = $v;
+			$this->trigger($type,'afterRead',$obj);
+			$this->trigger($type,'unserializeColumns',$obj);
 		}
-		$this->trigger($type,'afterRead',$obj);
-		$this->trigger($type,'unserializeColumns',$obj);
 		if($obj instanceof StateFollower)
 			$obj->__readingState(false);
 		if($row)
@@ -6525,9 +6560,9 @@ class SQL extends DataTable{
 				$pk = isset($this->row->{$this->getPrimaryKey()})?$this->row->{$this->getPrimaryKey()}:count($this->data)+1;
 				$this->data[$pk] = $this->row;
 			}
+			$this->trigger('afterRead',$this->row);
+			$this->trigger('unserializeColumns',$this->row);
 		}
-		$this->trigger('afterRead',$this->row);
-		$this->trigger('unserializeColumns',$this->row);
 		if($this->row instanceof StateFollower)
 			$this->row->__readingState(false);
 		if(!$row){
