@@ -363,7 +363,16 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 					case 'oneByPK':
 						$pk = $this[$t]->getPrimaryKey();
 						$rc = $t.'_'.$pk;
-						$addFK = [$type,$t,$rc,$pk,$xclusive];
+						$relType = $t;
+						
+						if($this->integerSuffixAsPolymorphism){
+							$polymorphism = $this->explodeIntegerSuffix($t);
+							if(count($polymorphism)>1){
+								list($relType,$index) = $polymorphism;
+							}
+						}
+						
+						$addFK = [$type,$relType,$rc,$pk,$xclusive];
 						if(!in_array($addFK,$fk))
 							$fk[] = $addFK;
 						$properties[$k] = $v;
@@ -373,6 +382,20 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 							$v = $this->scalarToArray($v,$k);
 							$v['_modified'] = false;
 						}
+						
+						if($this->integerSuffixAsPolymorphism){
+							$polymorphism = $this->explodeIntegerSuffix($k);
+							if(count($polymorphism)>1){
+								list($relType,$index) = $polymorphism;
+								if(is_array($v)){
+									$v['_type'] = $relType;
+								}
+								else{
+									$v->_type = $relType;
+								}
+							}
+						}
+						
 						if(is_array($v)){
 							$v = $this->arrayToEntity($v,$k);
 						}
