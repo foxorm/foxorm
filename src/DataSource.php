@@ -1051,4 +1051,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		}
 		return [$k,$meta,$xclusive,$push];
 	}
+	function explodeIntegerSuffix($k){
+		return preg_split('/(\d+)$/', $k, -1, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE);
+	}
 }
