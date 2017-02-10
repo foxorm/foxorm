@@ -27,6 +27,7 @@ class Mysql extends SQL{
 	
 	protected $fluidPDO;
 	protected $updateOnDuplicateKey;
+	protected $ignoreOnDuplicateKey;
 	
 	function construct(array $config=[]){
 		parent::construct($config);
@@ -573,6 +574,13 @@ class Mysql extends SQL{
 		}
 		return $this->updateOnDuplicateKey;
 	}
+	function ignoreOnDuplicateKey(){
+		if(func_num_args()){
+			$this->ignoreOnDuplicateKey = (bool)func_get_arg(0);
+		}
+		return $this->ignoreOnDuplicateKey;
+	}
+	
 	protected function createQueryExec($table,$pk,$insertcolumns,$id,$insertSlots,$suffix,$insertvalues){
 		if($this->updateOnDuplicateKey){
 			$doubleParams = [];
@@ -586,6 +594,9 @@ class Mysql extends SQL{
 			$update = 'UPDATE '.$pk.'=LAST_INSERT_ID('.$pk.'), '.implode(',',$up);
 			$query = $insert.' ON DUPLICATE KEY '.$update;
 			return $this->getCell($query,$doubleParams);
+		}
+		if($this->ignoreOnDuplicateKey){
+			return $this->getCell('INSERT IGNORE INTO '.$table.' ( '.$pk.', '.implode(',',$insertcolumns).' ) VALUES ( '.$id.', '. implode(',',$insertSlots).' ) '.$suffix,$insertvalues);
 		}
 		return parent::createQueryExec($table,$pk,$insertcolumns,$id,$insertSlots,$suffix,$insertvalues);
 	}
