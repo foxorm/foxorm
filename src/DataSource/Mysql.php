@@ -574,10 +574,7 @@ class Mysql extends SQL{
 		return $this->updateOnDuplicateKey;
 	}
 	protected function createQueryExec($table,$pk,$insertcolumns,$id,$insertSlots,$suffix,$insertvalues){
-		if(!$this->updateOnDuplicateKey){
-			return $this->getCell('INSERT INTO '.$table.' ( '.$pk.', '.implode(',',$insertcolumns).' ) VALUES ( '.$id.', '. implode(',',$insertSlots).' ) ',$insertvalues);
-		}
-		else{
+		if($this->updateOnDuplicateKey){
 			$doubleParams = [];
 			$up = [];
 			foreach($insertcolumns as $i=>$col){
@@ -590,5 +587,6 @@ class Mysql extends SQL{
 			$query = $insert.' ON DUPLICATE KEY '.$update;
 			return $this->getCell($query,$doubleParams);
 		}
+		return parent::createQueryExec($table,$pk,$insertcolumns,$id,$insertSlots,$suffix,$insertvalues);
 	}
 }
