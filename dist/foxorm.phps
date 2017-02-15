@@ -3031,6 +3031,7 @@ class Mysql extends SQL{
 	
 	protected $fluidPDO;
 	protected $updateOnDuplicateKey;
+	protected $ignoreOnDuplicateKey;
 	
 	function construct(array $config=[]){
 		parent::construct($config);
@@ -3577,11 +3578,15 @@ class Mysql extends SQL{
 		}
 		return $this->updateOnDuplicateKey;
 	}
-	protected function createQueryExec($table,$pk,$insertcolumns,$id,$insertSlots,$suffix,$insertvalues){
-		if(!$this->updateOnDuplicateKey){
-			return $this->getCell('INSERT INTO '.$table.' ( '.$pk.', '.implode(',',$insertcolumns).' ) VALUES ( '.$id.', '. implode(',',$insertSlots).' ) ',$insertvalues);
+	function ignoreOnDuplicateKey(){
+		if(func_num_args()){
+			$this->ignoreOnDuplicateKey = (bool)func_get_arg(0);
 		}
-		else{
+		return $this->ignoreOnDuplicateKey;
+	}
+	
+	protected function createQueryExec($table,$pk,$insertcolumns,$id,$insertSlots,$suffix,$insertvalues){
+		if($this->updateOnDuplicateKey){
 			$doubleParams = [];
 			$up = [];
 			foreach($insertcolumns as $i=>$col){
@@ -3594,6 +3599,10 @@ class Mysql extends SQL{
 			$query = $insert.' ON DUPLICATE KEY '.$update;
 			return $this->getCell($query,$doubleParams);
 		}
+		if($this->ignoreOnDuplicateKey){
+			return $this->getCell('INSERT IGNORE INTO '.$table.' ( '.$pk.', '.implode(',',$insertcolumns).' ) VALUES ( '.$id.', '. implode(',',$insertSlots).' ) '.$suffix,$insertvalues);
+		}
+		return parent::createQueryExec($table,$pk,$insertcolumns,$id,$insertSlots,$suffix,$insertvalues);
 	}
 }
 }
@@ -7660,6 +7669,7 @@ use FoxORM\Std\Cast;
 use FoxORM\DataSource;
 use FoxORM\Entity\StateFollower;
 use FoxORM\Exception\ValidationException;
+use FoxORM\Collection;
 class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable{
 	private $__readingState;
 	private $__data = [];
@@ -7775,7 +7785,7 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 						$this->__data[$k] = $this->many($relationKey);
 					}
 					else{
-						$this->__data[$k] = [];
+						$this->__data[$k] = new Collection([], $this->db);
 					}
 					$this->__cursor[$k] = &$this->__data[$k];
 				break;
@@ -7789,7 +7799,7 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 						$this->__data[$k] = $this->many2many($relationKey,$via);
 					}
 					else{
-						$this->__data[$k] = [];
+						$this->__data[$k] = new Collection([], $this->db);
 					}
 					$this->__cursor[$k] = &$this->__data[$k];
 				break;
