@@ -5,6 +5,7 @@ use FoxORM\Std\Cast;
 use FoxORM\DataSource;
 use FoxORM\Entity\StateFollower;
 use FoxORM\Exception\ValidationException;
+use stdClass;
 class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable{
 	private $__readingState;
 	private $__data = [];
@@ -120,7 +121,7 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 						$this->__data[$k] = $this->many($relationKey);
 					}
 					else{
-						$this->__data[$k] = [];
+						$this->__data[$k] = new stdClass;
 					}
 					$this->__cursor[$k] = &$this->__data[$k];
 				break;
@@ -134,7 +135,7 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 						$this->__data[$k] = $this->many2many($relationKey,$via);
 					}
 					else{
-						$this->__data[$k] = [];
+						$this->__data[$k] = new stdClass;
 					}
 					$this->__cursor[$k] = &$this->__data[$k];
 				break;
