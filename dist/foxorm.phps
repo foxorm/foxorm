@@ -8363,7 +8363,7 @@ class SqlLogger {
 	protected function normalizeSlots( $sql ){
 		$i = 0;
 		$newSql = $sql;
-		while($i < 20 && strpos($newSql, '?') !== FALSE ){
+		while(strpos($newSql, '?') !== FALSE ){
 			$pos   = strpos( $newSql, '?' );
 			$slot  = ':slot'.$i;
 			$begin = substr( $newSql, 0, $pos );
