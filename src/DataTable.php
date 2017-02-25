@@ -416,4 +416,8 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 	function getTableWrapper(){
 		return $this->tableWrapper;
 	}
+	
+	function adapt($properties,$cast=[]){
+		$this->dataSource->adaptStructure($this->name,$properties,$this->getPrimaryKey(),$this->getUniqTextKey(),$cast);
+	}
 }
