@@ -57,7 +57,7 @@ class Pgsql extends SQL{
 		$this->pdo->exec('CREATE DATABASE "'.$dbname.'"');
 	}
 	protected function createQueryExec($table,$pk,$insertcolumns,$insertSlots,$insertvalues){
-		return $this->getCell('INSERT INTO '.$table.' ( '.implode(',',$insertcolumns).' ) VALUES ( '. implode(',',$insertSlots).' ) RETURNING "'.$pk.'" ',$insertvalues);
+		$this->lastInsertId = $this->getCell('INSERT INTO '.$table.' ( '.implode(',',$insertcolumns).' ) VALUES ( '. implode(',',$insertSlots).' ) RETURNING "'.$pk.'" ',$insertvalues);
 	}
 	protected function _getTablesQuery(){
 		return $this->getCol( 'SELECT table_name FROM information_schema.tables WHERE table_schema = ANY( current_schemas( FALSE ) )' );
