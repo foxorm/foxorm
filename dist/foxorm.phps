@@ -1648,14 +1648,13 @@ abstract class SQL extends DataSource{
 		$where = $intId?$primaryKey:$uniqTextKey;
 		return $this->getCell('SELECT '.$primaryKey.' FROM '.$table.' WHERE '.$where.'=?',[$id]);
 	}
-	protected function createQueryExec($table,$pk,$insertcolumns,$insertSlots,$suffix,$insertvalues){
-		return $this->getCell('INSERT INTO '.$table.' ( '.implode(',',$insertcolumns).' ) VALUES ( '. implode(',',$insertSlots).' ) '.$suffix,$insertvalues);
+	protected function createQueryExec($table,$pk,$insertcolumns,$insertSlots,$insertvalues){
+		return $this->getCell('INSERT INTO '.$table.' ( '.implode(',',$insertcolumns).' ) VALUES ( '. implode(',',$insertSlots).' ) ',$insertvalues);
 	}
 	function createQuery($type,$properties,$primaryKey='id',$uniqTextKey='uniq',$cast=[],$func=[],$forcePK=null,array $scope=null){
 		$insertcolumns = array_keys($properties);
 		$insertvalues = array_values($properties);
 		$id = $forcePK?$forcePK:$this->defaultValue;
-		$suffix  = $this->getInsertSuffix($primaryKey);
 		$table   = $this->escTable($type);
 		if($scope){
 			foreach($scope as $k=>$v){
@@ -1678,15 +1677,11 @@ abstract class SQL extends DataSource{
 		array_unshift($insertcolumns,$pk);
 		array_unshift($insertSlots,$id);
 		
-		$result = $this->createQueryExec($table,$pk,$insertcolumns,$insertSlots,$suffix,$insertvalues);
-			
-		if($suffix)
-			$id = $result;
-		else
-			$id = (int)$this->lastInsertId;
+		$this->createQueryExec($table,$pk,$insertcolumns,$insertSlots,$insertvalues);
+
 		if(!$this->frozen&&method_exists($this,'adaptPrimaryKey'))
 			$this->adaptPrimaryKey($type,$id,$primaryKey);
-		return $id;
+		return $this->getInsertID();
 	}
 	function readQuery($type,$id,$primaryKey='id',$uniqTextKey='uniq',$obj,array $scope=null){
 		if($uniqTextKey&&!Cast::isInt($id))
@@ -1827,7 +1822,9 @@ abstract class SQL extends DataSource{
 				}
 				$this->logger->logChrono(sprintf("%.2f", $chrono).' '.$u);
 			}
-			$this->lastInsertId = $this->pdo->lastInsertId();
+			if(!$this->performingSystemQuery&&($lid=$this->pdo->lastInsertId())){
+				$this->lastInsertId = $lid;
+			}
 			if($debugOverride&&$this->debugLevel&self::DEBUG_EXPLAIN){
 				try{
 					$explain = $this->explain($sql,$bindings);
@@ -2237,9 +2234,6 @@ abstract class SQL extends DataSource{
 		}
 	}
 	
-	protected function getInsertSuffix($primaryKey){
-		return '';
-	}
 	function unbindRead($type,$property=null,$func=null){
 		if(!isset($property)){
 			if(isset($this->sqlFiltersRead[$type])){
@@ -3588,7 +3582,7 @@ class Mysql extends SQL{
 		return $this->ignoreOnDuplicateKey;
 	}
 	
-	protected function createQueryExec($table,$pk,$insertcolumns,$insertSlots,$suffix,$insertvalues){
+	protected function createQueryExec($table,$pk,$insertcolumns,$insertSlots,$insertvalues){
 		if($this->updateOnDuplicateKey){
 			$doubleParams = [];
 			$up = [];
@@ -3600,12 +3594,14 @@ class Mysql extends SQL{
 			$insert = 'INSERT INTO '.$table.' ( '.implode(',',$insertcolumns).' ) VALUES ( '. implode(',',$insertSlots).' ) ';
 			$update = 'UPDATE '.$pk.'=LAST_INSERT_ID('.$pk.'), '.implode(',',$up);
 			$query = $insert.' ON DUPLICATE KEY '.$update;
-			return $this->getCell($query,$doubleParams);
+			$this->getCell($query,$doubleParams);
 		}
-		if($this->ignoreOnDuplicateKey){
-			return $this->getCell('INSERT IGNORE INTO '.$table.' ( '.implode(',',$insertcolumns).' ) VALUES ( '. implode(',',$insertSlots).' ) '.$suffix,$insertvalues);
+		else if($this->ignoreOnDuplicateKey){
+			$this->getCell('INSERT IGNORE INTO '.$table.' ( '.implode(',',$insertcolumns).' ) VALUES ( '. implode(',',$insertSlots).' ) ',$insertvalues);
 		}
-		return parent::createQueryExec($table,$pk,$insertcolumns,$insertSlots,$suffix,$insertvalues);
+		else{
+			parent::createQueryExec($table,$pk,$insertcolumns,$insertSlots,$insertvalues);
+		}
 	}
 }
 }
@@ -3668,8 +3664,8 @@ class Pgsql extends SQL{
 	function createDatabase($dbname){
 		$this->pdo->exec('CREATE DATABASE "'.$dbname.'"');
 	}
-	protected function getInsertSuffix( $primaryKey ){
-		return 'RETURNING "'.$primaryKey.'" ';
+	protected function createQueryExec($table,$pk,$insertcolumns,$insertSlots,$insertvalues){
+		$this->lastInsertId = $this->getCell('INSERT INTO '.$table.' ( '.implode(',',$insertcolumns).' ) VALUES ( '. implode(',',$insertSlots).' ) RETURNING "'.$pk.'" ',$insertvalues);
 	}
 	protected function _getTablesQuery(){
 		return $this->getCol( 'SELECT table_name FROM information_schema.tables WHERE table_schema = ANY( current_schemas( FALSE ) )' );
