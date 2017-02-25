@@ -585,6 +585,7 @@ class Mysql extends SQL{
 		$query = 'INSERT '.$ignore.'INTO '.$table.' ( '.implode(',',$insertcolumns).' ) VALUES ( '. implode(',',$insertSlots).' ) ';
 		if($this->updateOnDuplicateKey){
 			$up = [];
+			array_shift($insertcolumns);
 			foreach($insertcolumns as $col){
 				$up[] = $col.' = VALUES('.$col.')';
 			}
