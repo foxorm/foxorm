@@ -582,24 +582,14 @@ class Mysql extends SQL{
 	}
 	
 	protected function createQueryExec($table,$pk,$insertcolumns,$insertSlots,$insertvalues){
+		$query = 'INSERT '.$ignore.'INTO '.$table.' ( '.implode(',',$insertcolumns).' ) VALUES ( '. implode(',',$insertSlots).' ) ';
 		if($this->updateOnDuplicateKey){
-			$doubleParams = [];
 			$up = [];
-			foreach($insertcolumns as $i=>$col){
-				$up[] = $col.' = '.$insertSlots[$i];
+			foreach($insertcolumns as $col){
+				$up[] = $col.' = VALUES('.$col.')';
 			}
-			foreach($insertvalues as $v) $doubleParams[] = $v;
-			foreach($insertvalues as $v) $doubleParams[] = $v;
-			$insert = 'INSERT INTO '.$table.' ( '.implode(',',$insertcolumns).' ) VALUES ( '. implode(',',$insertSlots).' ) ';
-			$update = 'UPDATE '.$pk.'=LAST_INSERT_ID('.$pk.'), '.implode(',',$up);
-			$query = $insert.' ON DUPLICATE KEY '.$update;
-			$this->runQuery($query,$doubleParams);
+			$query = $query.' ON DUPLICATE KEY UPDATE '.$pk.'=LAST_INSERT_ID('.$pk.'), '.implode(',',$up);
 		}
-		else if($this->ignoreOnDuplicateKey){
-			$this->runQuery('INSERT IGNORE INTO '.$table.' ( '.implode(',',$insertcolumns).' ) VALUES ( '. implode(',',$insertSlots).' ) ',$insertvalues);
-		}
-		else{
-			parent::createQueryExec($table,$pk,$insertcolumns,$insertSlots,$insertvalues);
-		}
+		$this->runQuery($query,$insertvalues);
 	}
 }
