@@ -581,7 +581,7 @@ class Mysql extends SQL{
 		return $this->ignoreOnDuplicateKey;
 	}
 	
-	protected function createQueryExec($table,$pk,$insertcolumns,$insertSlots,$suffix,$insertvalues){
+	protected function createQueryExec($table,$pk,$insertcolumns,$insertSlots,$insertvalues){
 		if($this->updateOnDuplicateKey){
 			$doubleParams = [];
 			$up = [];
@@ -596,8 +596,8 @@ class Mysql extends SQL{
 			return $this->getCell($query,$doubleParams);
 		}
 		if($this->ignoreOnDuplicateKey){
-			return $this->getCell('INSERT IGNORE INTO '.$table.' ( '.implode(',',$insertcolumns).' ) VALUES ( '. implode(',',$insertSlots).' ) '.$suffix,$insertvalues);
+			return $this->getCell('INSERT IGNORE INTO '.$table.' ( '.implode(',',$insertcolumns).' ) VALUES ( '. implode(',',$insertSlots).' ) ',$insertvalues);
 		}
-		return parent::createQueryExec($table,$pk,$insertcolumns,$insertSlots,$suffix,$insertvalues);
+		return parent::createQueryExec($table,$pk,$insertcolumns,$insertSlots,$insertvalues);
 	}
 }

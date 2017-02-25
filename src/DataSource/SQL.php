@@ -98,14 +98,13 @@ abstract class SQL extends DataSource{
 		$where = $intId?$primaryKey:$uniqTextKey;
 		return $this->getCell('SELECT '.$primaryKey.' FROM '.$table.' WHERE '.$where.'=?',[$id]);
 	}
-	protected function createQueryExec($table,$pk,$insertcolumns,$insertSlots,$suffix,$insertvalues){
-		return $this->getCell('INSERT INTO '.$table.' ( '.implode(',',$insertcolumns).' ) VALUES ( '. implode(',',$insertSlots).' ) '.$suffix,$insertvalues);
+	protected function createQueryExec($table,$pk,$insertcolumns,$insertSlots,$insertvalues){
+		return $this->getCell('INSERT INTO '.$table.' ( '.implode(',',$insertcolumns).' ) VALUES ( '. implode(',',$insertSlots).' ) ',$insertvalues);
 	}
 	function createQuery($type,$properties,$primaryKey='id',$uniqTextKey='uniq',$cast=[],$func=[],$forcePK=null,array $scope=null){
 		$insertcolumns = array_keys($properties);
 		$insertvalues = array_values($properties);
 		$id = $forcePK?$forcePK:$this->defaultValue;
-		$suffix  = $this->getInsertSuffix($primaryKey);
 		$table   = $this->escTable($type);
 		if($scope){
 			foreach($scope as $k=>$v){
@@ -128,15 +127,11 @@ abstract class SQL extends DataSource{
 		array_unshift($insertcolumns,$pk);
 		array_unshift($insertSlots,$id);
 		
-		$result = $this->createQueryExec($table,$pk,$insertcolumns,$insertSlots,$suffix,$insertvalues);
-			
-		if($suffix)
-			$id = $result;
-		else
-			$id = (int)$this->lastInsertId;
+		$this->createQueryExec($table,$pk,$insertcolumns,$insertSlots,$insertvalues);
+
 		if(!$this->frozen&&method_exists($this,'adaptPrimaryKey'))
 			$this->adaptPrimaryKey($type,$id,$primaryKey);
-		return $id;
+		return $this->getInsertID();
 	}
 	function readQuery($type,$id,$primaryKey='id',$uniqTextKey='uniq',$obj,array $scope=null){
 		if($uniqTextKey&&!Cast::isInt($id))
@@ -687,9 +682,6 @@ abstract class SQL extends DataSource{
 		}
 	}
 	
-	protected function getInsertSuffix($primaryKey){
-		return '';
-	}
 	function unbindRead($type,$property=null,$func=null){
 		if(!isset($property)){
 			if(isset($this->sqlFiltersRead[$type])){
