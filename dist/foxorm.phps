@@ -1599,6 +1599,8 @@ abstract class SQL extends DataSource{
 	private $cacheColumns = [];
 	private $cacheFk = [];
 	
+	private $lastInsertId;
+	
 	function construct(array $config=[]){		
 		if(isset($config[0]))
 			$this->dsn = $config[0];
@@ -1646,8 +1648,8 @@ abstract class SQL extends DataSource{
 		$where = $intId?$primaryKey:$uniqTextKey;
 		return $this->getCell('SELECT '.$primaryKey.' FROM '.$table.' WHERE '.$where.'=?',[$id]);
 	}
-	protected function createQueryExec($table,$pk,$insertcolumns,$id,$insertSlots,$suffix,$insertvalues){
-		return $this->getCell('INSERT INTO '.$table.' ( '.$pk.', '.implode(',',$insertcolumns).' ) VALUES ( '.$id.', '. implode(',',$insertSlots).' ) '.$suffix,$insertvalues);
+	protected function createQueryExec($table,$pk,$insertcolumns,$insertSlots,$suffix,$insertvalues){
+		return $this->getCell('INSERT INTO '.$table.' ( '.implode(',',$insertcolumns).' ) VALUES ( '. implode(',',$insertSlots).' ) '.$suffix,$insertvalues);
 	}
 	function createQuery($type,$properties,$primaryKey='id',$uniqTextKey='uniq',$cast=[],$func=[],$forcePK=null,array $scope=null){
 		$insertcolumns = array_keys($properties);
@@ -1662,25 +1664,26 @@ abstract class SQL extends DataSource{
 		}
 		$this->adaptStructure($type,$properties,$primaryKey,$uniqTextKey,$cast);
 		$pk = $this->esc($primaryKey);
-		if(!empty($insertcolumns)||!empty($func)){
-			$insertSlots = [];
-			foreach($insertcolumns as $k=>$v){
-				$insertcolumns[$k] = $this->esc($v);
-				$insertSlots[] = $this->getWriteSnippet($type,$v);
-			}
-			foreach($func as $k=>$v){
-				$insertcolumns[] = $this->esc($k);
-				$insertSlots[] = $v;
-			}
-			$result = $this->createQueryExec($table,$pk,$insertcolumns,$id,$insertSlots,$suffix,$insertvalues);
+		
+		$insertSlots = [];
+		foreach($insertcolumns as $k=>$v){
+			$insertcolumns[$k] = $this->esc($v);
+			$insertSlots[] = $this->getWriteSnippet($type,$v);
 		}
-		else{
-			$result = $this->getCell('INSERT INTO '.$table.' ('.$pk.') VALUES('.$id.') '.$suffix);
+		foreach($func as $k=>$v){
+			$insertcolumns[] = $this->esc($k);
+			$insertSlots[] = $v;
 		}
+		
+		array_unshift($insertcolumns,$pk);
+		array_unshift($insertSlots,$id);
+		
+		$result = $this->createQueryExec($table,$pk,$insertcolumns,$insertSlots,$suffix,$insertvalues);
+			
 		if($suffix)
 			$id = $result;
 		else
-			$id = (int)$this->pdo->lastInsertId();
+			$id = (int)$this->lastInsertId;
 		if(!$this->frozen&&method_exists($this,'adaptPrimaryKey'))
 			$this->adaptPrimaryKey($type,$id,$primaryKey);
 		return $id;
@@ -1824,6 +1827,7 @@ abstract class SQL extends DataSource{
 				}
 				$this->logger->logChrono(sprintf("%.2f", $chrono).' '.$u);
 			}
+			$this->lastInsertId = $this->pdo->lastInsertId();
 			if($debugOverride&&$this->debugLevel&self::DEBUG_EXPLAIN){
 				try{
 					$explain = $this->explain($sql,$bindings);
@@ -2006,8 +2010,7 @@ abstract class SQL extends DataSource{
 	}
 
 	function getInsertID(){
-		$this->connect();
-		return (int) $this->pdo->lastInsertId();
+		return (int)$this->lastInsertId;
 	}
 	function fetch( $sql, $bindings = [] ){
 		return $this->runQuery( $sql, $bindings, [ 'noFetch' => true ] );
@@ -3585,7 +3588,7 @@ class Mysql extends SQL{
 		return $this->ignoreOnDuplicateKey;
 	}
 	
-	protected function createQueryExec($table,$pk,$insertcolumns,$id,$insertSlots,$suffix,$insertvalues){
+	protected function createQueryExec($table,$pk,$insertcolumns,$insertSlots,$suffix,$insertvalues){
 		if($this->updateOnDuplicateKey){
 			$doubleParams = [];
 			$up = [];
@@ -3594,15 +3597,15 @@ class Mysql extends SQL{
 			}
 			foreach($insertvalues as $v) $doubleParams[] = $v;
 			foreach($insertvalues as $v) $doubleParams[] = $v;
-			$insert = 'INSERT INTO '.$table.' ( '.$pk.', '.implode(',',$insertcolumns).' ) VALUES ( NULL, '. implode(',',$insertSlots).' ) ';
+			$insert = 'INSERT INTO '.$table.' ( '.implode(',',$insertcolumns).' ) VALUES ( '. implode(',',$insertSlots).' ) ';
 			$update = 'UPDATE '.$pk.'=LAST_INSERT_ID('.$pk.'), '.implode(',',$up);
 			$query = $insert.' ON DUPLICATE KEY '.$update;
 			return $this->getCell($query,$doubleParams);
 		}
 		if($this->ignoreOnDuplicateKey){
-			return $this->getCell('INSERT IGNORE INTO '.$table.' ( '.$pk.', '.implode(',',$insertcolumns).' ) VALUES ( '.$id.', '. implode(',',$insertSlots).' ) '.$suffix,$insertvalues);
+			return $this->getCell('INSERT IGNORE INTO '.$table.' ( '.implode(',',$insertcolumns).' ) VALUES ( '. implode(',',$insertSlots).' ) '.$suffix,$insertvalues);
 		}
-		return parent::createQueryExec($table,$pk,$insertcolumns,$id,$insertSlots,$suffix,$insertvalues);
+		return parent::createQueryExec($table,$pk,$insertcolumns,$insertSlots,$suffix,$insertvalues);
 	}
 }
 }
@@ -6328,6 +6331,10 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 	}
 	function getTableWrapper(){
 		return $this->tableWrapper;
+	}
+	
+	function adapt($properties,$cast=[]){
+		$this->dataSource->adaptStructure($this->name,$properties,$this->getPrimaryKey(),$this->getUniqTextKey(),$cast);
 	}
 }
 }
