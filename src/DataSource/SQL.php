@@ -98,8 +98,8 @@ abstract class SQL extends DataSource{
 		$where = $intId?$primaryKey:$uniqTextKey;
 		return $this->getCell('SELECT '.$primaryKey.' FROM '.$table.' WHERE '.$where.'=?',[$id]);
 	}
-	protected function createQueryExec($table,$pk,$insertcolumns,$id,$insertSlots,$suffix,$insertvalues){
-		return $this->getCell('INSERT INTO '.$table.' ( '.$pk.', '.implode(',',$insertcolumns).' ) VALUES ( '.$id.', '. implode(',',$insertSlots).' ) '.$suffix,$insertvalues);
+	protected function createQueryExec($table,$pk,$insertcolumns,$insertSlots,$suffix,$insertvalues){
+		return $this->getCell('INSERT INTO '.$table.' ( '.implode(',',$insertcolumns).' ) VALUES ( '. implode(',',$insertSlots).' ) '.$suffix,$insertvalues);
 	}
 	function createQuery($type,$properties,$primaryKey='id',$uniqTextKey='uniq',$cast=[],$func=[],$forcePK=null,array $scope=null){
 		$insertcolumns = array_keys($properties);
@@ -114,21 +114,22 @@ abstract class SQL extends DataSource{
 		}
 		$this->adaptStructure($type,$properties,$primaryKey,$uniqTextKey,$cast);
 		$pk = $this->esc($primaryKey);
-		if(!empty($insertcolumns)||!empty($func)){
-			$insertSlots = [];
-			foreach($insertcolumns as $k=>$v){
-				$insertcolumns[$k] = $this->esc($v);
-				$insertSlots[] = $this->getWriteSnippet($type,$v);
-			}
-			foreach($func as $k=>$v){
-				$insertcolumns[] = $this->esc($k);
-				$insertSlots[] = $v;
-			}
-			$result = $this->createQueryExec($table,$pk,$insertcolumns,$id,$insertSlots,$suffix,$insertvalues);
+		
+		$insertSlots = [];
+		foreach($insertcolumns as $k=>$v){
+			$insertcolumns[$k] = $this->esc($v);
+			$insertSlots[] = $this->getWriteSnippet($type,$v);
 		}
-		else{
-			$result = $this->getCell('INSERT INTO '.$table.' ('.$pk.') VALUES('.$id.') '.$suffix);
+		foreach($func as $k=>$v){
+			$insertcolumns[] = $this->esc($k);
+			$insertSlots[] = $v;
 		}
+		
+		array_unshift($insertcolumns,$pk);
+		array_unshift($insertSlots,$id);
+		
+		$result = $this->createQueryExec($table,$pk,$insertcolumns,$insertSlots,$suffix,$insertvalues);
+			
 		if($suffix)
 			$id = $result;
 		else
