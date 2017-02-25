@@ -49,6 +49,8 @@ abstract class SQL extends DataSource{
 	private $cacheColumns = [];
 	private $cacheFk = [];
 	
+	private $lastInsertId;
+	
 	function construct(array $config=[]){		
 		if(isset($config[0]))
 			$this->dsn = $config[0];
@@ -130,7 +132,7 @@ abstract class SQL extends DataSource{
 		if($suffix)
 			$id = $result;
 		else
-			$id = (int)$this->pdo->lastInsertId();
+			$id = (int)$this->lastInsertId;
 		if(!$this->frozen&&method_exists($this,'adaptPrimaryKey'))
 			$this->adaptPrimaryKey($type,$id,$primaryKey);
 		return $id;
@@ -274,6 +276,7 @@ abstract class SQL extends DataSource{
 				}
 				$this->logger->logChrono(sprintf("%.2f", $chrono).' '.$u);
 			}
+			$this->lastInsertId = $this->pdo->lastInsertId();
 			if($debugOverride&&$this->debugLevel&self::DEBUG_EXPLAIN){
 				try{
 					$explain = $this->explain($sql,$bindings);
@@ -456,8 +459,7 @@ abstract class SQL extends DataSource{
 	}
 
 	function getInsertID(){
-		$this->connect();
-		return (int) $this->pdo->lastInsertId();
+		return (int)$this->lastInsertId;
 	}
 	function fetch( $sql, $bindings = [] ){
 		return $this->runQuery( $sql, $bindings, [ 'noFetch' => true ] );
