@@ -593,10 +593,10 @@ class Mysql extends SQL{
 			$insert = 'INSERT INTO '.$table.' ( '.implode(',',$insertcolumns).' ) VALUES ( '. implode(',',$insertSlots).' ) ';
 			$update = 'UPDATE '.$pk.'=LAST_INSERT_ID('.$pk.'), '.implode(',',$up);
 			$query = $insert.' ON DUPLICATE KEY '.$update;
-			$this->getCell($query,$doubleParams);
+			$this->runQuery($query,$doubleParams);
 		}
 		else if($this->ignoreOnDuplicateKey){
-			$this->getCell('INSERT IGNORE INTO '.$table.' ( '.implode(',',$insertcolumns).' ) VALUES ( '. implode(',',$insertSlots).' ) ',$insertvalues);
+			$this->runQuery('INSERT IGNORE INTO '.$table.' ( '.implode(',',$insertcolumns).' ) VALUES ( '. implode(',',$insertSlots).' ) ',$insertvalues);
 		}
 		else{
 			parent::createQueryExec($table,$pk,$insertcolumns,$insertSlots,$insertvalues);
