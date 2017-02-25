@@ -272,8 +272,8 @@ abstract class SQL extends DataSource{
 				}
 				$this->logger->logChrono(sprintf("%.2f", $chrono).' '.$u);
 			}
-			if(!$this->performingSystemQuery){
-				$this->lastInsertId = $this->pdo->lastInsertId();
+			if(!$this->performingSystemQuery&&($lid=$this->pdo->lastInsertId())){
+				$this->lastInsertId = $lid;
 			}
 			if($debugOverride&&$this->debugLevel&self::DEBUG_EXPLAIN){
 				try{
