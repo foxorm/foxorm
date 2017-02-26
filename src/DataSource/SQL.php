@@ -143,7 +143,7 @@ abstract class SQL extends DataSource{
 		$id = $this->defaultValue;
 		$pk = $this->esc($primaryKey);
 		$table   = $this->escTable($type);
-		$onDuplicateUpdate = isset($this->updateOnDuplicateKey)&&$this->updateOnDuplicateKey;
+		$onDuplicateUpdate = isset($this->enableInsertIgnore)&&$this->enableInsertIgnore;
 		
 		//collect columns
 		$insertcolumns = [];

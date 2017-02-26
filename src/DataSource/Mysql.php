@@ -26,7 +26,7 @@ class Mysql extends SQL{
 	protected $concatenator = '0x1D';
 	
 	protected $fluidPDO;
-	protected $updateOnDuplicateKey;
+	protected $enableInsertIgnore;
 	protected $ignoreOnDuplicateKey;
 	
 	function construct(array $config=[]){
@@ -568,11 +568,11 @@ class Mysql extends SQL{
 		',$params);
 	}
 	
-	function updateOnDuplicateKey(){
+	function enableInsertIgnore(){
 		if(func_num_args()){
-			$this->updateOnDuplicateKey = (bool)func_get_arg(0);
+			$this->enableInsertIgnore = (bool)func_get_arg(0);
 		}
-		return $this->updateOnDuplicateKey;
+		return $this->enableInsertIgnore;
 	}
 	function ignoreOnDuplicateKey(){
 		if(func_num_args()){
@@ -584,7 +584,7 @@ class Mysql extends SQL{
 	protected function createQueryExec($table,$pk,$insertcolumns,$insertSlots,$insertvalues){
 		$ignore = isset($this->ignoreOnDuplicateKey)&&$this->ignoreOnDuplicateKey?'IGNORE ':'';
 		$query = 'INSERT '.$ignore.'INTO '.$table.' ( '.implode(',',$insertcolumns).' ) VALUES ( '. implode(',',$insertSlots).' ) ';
-		if($this->updateOnDuplicateKey){
+		if($this->enableInsertIgnore){
 			$up = [];
 			array_shift($insertcolumns);
 			foreach($insertcolumns as $col){
