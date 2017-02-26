@@ -1649,7 +1649,7 @@ abstract class SQL extends DataSource{
 		return $this->getCell('SELECT '.$primaryKey.' FROM '.$table.' WHERE '.$where.'=?',[$id]);
 	}
 	protected function createQueryExec($table,$pk,$insertcolumns,$insertSlots,$insertvalues){
-		return $this->getCell('INSERT INTO '.$table.' ( '.implode(',',$insertcolumns).' ) VALUES ( '. implode(',',$insertSlots).' ) ',$insertvalues);
+		$this->runQuery('INSERT INTO '.$table.' ( '.implode(',',$insertcolumns).' ) VALUES ( '. implode(',',$insertSlots).' ) ',$insertvalues);
 	}
 	function createQuery($type,$properties,$primaryKey='id',$uniqTextKey='uniq',$cast=[],$func=[],$forcePK=null,array $scope=null){
 		$insertcolumns = array_keys($properties);
@@ -1683,7 +1683,12 @@ abstract class SQL extends DataSource{
 			$this->adaptPrimaryKey($type,$id,$primaryKey);
 		return $this->getInsertID();
 	}
+	
+	
 	function readQuery($type,$id,$primaryKey='id',$uniqTextKey='uniq',$obj,array $scope=null){
+		if(!$id){
+			return false;
+		}
 		if($uniqTextKey&&!Cast::isInt($id))
 			$primaryKey = $uniqTextKey;
 		$table = $this->escTable($type);
@@ -1805,7 +1810,7 @@ abstract class SQL extends DataSource{
 		if($debugOverride&&$this->debugLevel&self::DEBUG_QUERY)
 			$this->logger->logSql($sql, $bindings);
 		try {
-			list($sql,$bindings) = self::nestBinding($sql,$bindings);
+			list($sql,$bindings) = $this->nestBinding($sql,$bindings);
 			$statement = $this->pdo->prepare( $sql );
 			$this->bindParams( $statement, $bindings );
 			if($debugOverride&&$this->debugLevel&self::DEBUG_SPEED)
@@ -1822,6 +1827,7 @@ abstract class SQL extends DataSource{
 				}
 				$this->logger->logChrono(sprintf("%.2f", $chrono).' '.$u);
 			}
+			$this->affectedRows = $statement->rowCount();
 			if(!$this->performingSystemQuery&&($lid=$this->pdo->lastInsertId())){
 				$this->lastInsertId = $lid;
 			}
@@ -1835,7 +1841,6 @@ abstract class SQL extends DataSource{
 					//$this->logger->log($e->getMessage());
 				}
 			}
-			$this->affectedRows = $statement->rowCount();
 			if($statement->columnCount()){
 				$fetchStyle = ( isset( $options['fetchStyle'] ) ) ? $options['fetchStyle'] : NULL;
 				if ( isset( $options['noFetch'] ) && $options['noFetch'] ) {
@@ -2147,7 +2152,7 @@ abstract class SQL extends DataSource{
 		}
 		return false;
 	}
-	static function nestBinding($sql,$binds){
+	function nestBinding($sql,$binds){
 		do{
 			list($sql,$binds) = self::pointBindingLoop($sql,(array)$binds);
 			list($sql,$binds) = self::nestBindingLoop($sql,(array)$binds);
@@ -3583,25 +3588,16 @@ class Mysql extends SQL{
 	}
 	
 	protected function createQueryExec($table,$pk,$insertcolumns,$insertSlots,$insertvalues){
+		$query = 'INSERT '.$ignore.'INTO '.$table.' ( '.implode(',',$insertcolumns).' ) VALUES ( '. implode(',',$insertSlots).' ) ';
 		if($this->updateOnDuplicateKey){
-			$doubleParams = [];
 			$up = [];
-			foreach($insertcolumns as $i=>$col){
-				$up[] = $col.' = '.$insertSlots[$i];
+			array_shift($insertcolumns);
+			foreach($insertcolumns as $col){
+				$up[] = $col.' = VALUES('.$col.')';
 			}
-			foreach($insertvalues as $v) $doubleParams[] = $v;
-			foreach($insertvalues as $v) $doubleParams[] = $v;
-			$insert = 'INSERT INTO '.$table.' ( '.implode(',',$insertcolumns).' ) VALUES ( '. implode(',',$insertSlots).' ) ';
-			$update = 'UPDATE '.$pk.'=LAST_INSERT_ID('.$pk.'), '.implode(',',$up);
-			$query = $insert.' ON DUPLICATE KEY '.$update;
-			$this->getCell($query,$doubleParams);
+			$query = $query.' ON DUPLICATE KEY UPDATE '.$pk.'=LAST_INSERT_ID('.$pk.'), '.implode(',',$up);
 		}
-		else if($this->ignoreOnDuplicateKey){
-			$this->getCell('INSERT IGNORE INTO '.$table.' ( '.implode(',',$insertcolumns).' ) VALUES ( '. implode(',',$insertSlots).' ) ',$insertvalues);
-		}
-		else{
-			parent::createQueryExec($table,$pk,$insertcolumns,$insertSlots,$insertvalues);
-		}
+		$this->runQuery($query,$insertvalues);
 	}
 }
 }
