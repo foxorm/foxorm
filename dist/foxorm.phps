@@ -1684,7 +1684,162 @@ abstract class SQL extends DataSource{
 		return $this->getInsertID();
 	}
 	
-	
+	function createQueryMulti($type,$rows,$primaryKey='id',$uniqTextKey='uniq',$cast=[],$func=[]){
+		
+		if(empty($rows)){
+			return;
+		}
+		
+		$id = $this->defaultValue;
+		$pk = $this->esc($primaryKey);
+		$table   = $this->escTable($type);
+		$onDuplicateUpdate = isset($this->enableInsertIgnore)&&$this->enableInsertIgnore;
+		
+		//collect columns
+		$insertcolumns = [];
+		foreach($rows as $row){
+			foreach($row as $k=>$v){
+				if(substr($k,0,1)!='_'&&Cast::isScalar($v)){
+					$col = $k;
+				}
+				else{
+					list($key,$meta) = $this->extractMetaFromKey($k);
+					if($meta=='one'){
+						$oneType = $this->findEntityTable($v);
+						$onePk = $this->getTablePrimaryKey($oneType);
+						$col = $oneType.'_'.$onePk;
+						$row->$col = $v->$onePk;
+					}
+				}
+				if(!in_array($col,$insertcolumns)){
+					$insertcolumns[] = $col;
+				}
+			}
+		}
+		
+		//adaptStructure
+		foreach($rows as $row){
+			$properties = [];
+			foreach($insertcolumns as $k){
+				if($k==$primaryKey){
+					continue;
+				}
+				$v = $row->$k;
+				if(!Cast::isScalar($v)){
+					$v = null;
+				}
+				$properties[$k] = $v;
+			}
+			$this->adaptStructure($type,$properties,$primaryKey,$uniqTextKey,$cast);
+			
+		}
+		
+		//get unique constraints
+		if($onDuplicateUpdate){
+			$uniqConstraints = $this->getUniqueConstraints($type);
+			$uniqConstraints = isset($uniqConstraints[0])?$uniqConstraints[0]:false;
+			//clean duplicate
+			if($uniqConstraints){
+				$uniqRefs = [];
+				$uniqRows = [];
+				foreach($rows as $row){
+						$ref = &$uniqRefs;
+						$found = true;
+						foreach($uniqConstraints as $col){
+							$v = $row->$col;
+							if($v){
+								$ref = &$ref[$v];
+								if(!isset($ref)){
+									$found = false;
+									$ref = [];
+									break;
+								}
+							}
+						}
+						unset($ref);
+						if($found){
+							continue;
+						}
+						
+					$uniqRows[] = $row;
+				}
+				$rows = $uniqRows;
+			}
+		}
+		
+		//collect values
+		$insertvalues = [];
+		foreach($rows as $row){
+			foreach($insertcolumns as $k){
+				if($k==$primaryKey){
+					continue;
+				}
+				$v = $row->$k;
+				if(!Cast::isScalar($v)){
+					$v = null;
+				}
+				$insertvalues[] = $v;
+			}
+			
+		}
+		
+		//make slots
+		$insertSlots = [];
+		foreach($insertcolumns as $k=>$v){
+			$insertcolumns[$k] = $this->esc($v);
+			$insertSlots[] = $this->getWriteSnippet($type,$v);
+		}
+		foreach($func as $k=>$v){
+			$insertcolumns[] = $this->esc($k);
+			$insertSlots[] = $v;
+		}
+		array_unshift($insertcolumns,$pk);
+		array_unshift($insertSlots,$id);
+		
+		$count = count($rows);
+		
+		//build query
+		$ignore = isset($this->ignoreOnDuplicateKey)&&$this->ignoreOnDuplicateKey?'IGNORE ':'';
+		$query = 'INSERT '.$ignore.'INTO '.$table.' ( '.implode(',',$insertcolumns).' ) VALUES ';
+		$query .= rtrim(str_repeat('('. implode(',',$insertSlots).'),',$count),',');
+		if($onDuplicateUpdate){
+			$up = [];
+			array_shift($insertcolumns);
+			foreach($insertcolumns as $col){
+				$up[] = $col.' = VALUES('.$col.')';
+			}
+			$query = $query.' ON DUPLICATE KEY UPDATE '.$pk.'=LAST_INSERT_ID('.$pk.'), '.implode(',',$up);
+			
+		}
+		
+		//perform query
+		$this->runQuery($query,$insertvalues);
+		
+		//re-associate primary keys
+		if($onDuplicateUpdate&&$uniqConstraints){
+			$where = [];
+			foreach($uniqConstraints as $col){
+				$where[] = $this->esc($col).' = ?';
+			}
+			foreach($rows as $row){
+				$bind = [];
+				foreach($uniqConstraints as $col){
+					$bind[] = $row->$col;
+				}
+				$primaryIndex = $this->getCell('SELECT '.$pk.' FROM '.$table.' WHERE '.implode(' AND ',$where),$bind);
+				$row->$primaryKey = $primaryIndex;
+			}
+		}
+		else{
+			$primaryIndex = $this->getInsertID();
+			foreach(array_reverse($rows) as $row){
+				$row->$primaryKey = $primaryIndex;
+				$primaryIndex--;
+			}
+		}
+		
+		return $rows;
+	}
 	function readQuery($type,$id,$primaryKey='id',$uniqTextKey='uniq',$obj,array $scope=null){
 		if(!$id){
 			return false;
@@ -3032,7 +3187,7 @@ class Mysql extends SQL{
 	protected $concatenator = '0x1D';
 	
 	protected $fluidPDO;
-	protected $updateOnDuplicateKey;
+	protected $enableInsertIgnore;
 	protected $ignoreOnDuplicateKey;
 	
 	function construct(array $config=[]){
@@ -3574,11 +3729,11 @@ class Mysql extends SQL{
 		',$params);
 	}
 	
-	function updateOnDuplicateKey(){
+	function enableInsertIgnore(){
 		if(func_num_args()){
-			$this->updateOnDuplicateKey = (bool)func_get_arg(0);
+			$this->enableInsertIgnore = (bool)func_get_arg(0);
 		}
-		return $this->updateOnDuplicateKey;
+		return $this->enableInsertIgnore;
 	}
 	function ignoreOnDuplicateKey(){
 		if(func_num_args()){
@@ -3588,8 +3743,9 @@ class Mysql extends SQL{
 	}
 	
 	protected function createQueryExec($table,$pk,$insertcolumns,$insertSlots,$insertvalues){
+		$ignore = isset($this->ignoreOnDuplicateKey)&&$this->ignoreOnDuplicateKey?'IGNORE ':'';
 		$query = 'INSERT '.$ignore.'INTO '.$table.' ( '.implode(',',$insertcolumns).' ) VALUES ( '. implode(',',$insertSlots).' ) ';
-		if($this->updateOnDuplicateKey){
+		if($this->enableInsertIgnore){
 			$up = [];
 			array_shift($insertcolumns);
 			foreach($insertcolumns as $col){
