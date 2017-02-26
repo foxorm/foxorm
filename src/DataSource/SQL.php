@@ -134,6 +134,7 @@ abstract class SQL extends DataSource{
 		return $this->getInsertID();
 	}
 	
+	
 	function readQuery($type,$id,$primaryKey='id',$uniqTextKey='uniq',$obj,array $scope=null){
 		if(!$id){
 			return false;
@@ -259,7 +260,7 @@ abstract class SQL extends DataSource{
 		if($debugOverride&&$this->debugLevel&self::DEBUG_QUERY)
 			$this->logger->logSql($sql, $bindings);
 		try {
-			list($sql,$bindings) = self::nestBinding($sql,$bindings);
+			list($sql,$bindings) = $this->nestBinding($sql,$bindings);
 			$statement = $this->pdo->prepare( $sql );
 			$this->bindParams( $statement, $bindings );
 			if($debugOverride&&$this->debugLevel&self::DEBUG_SPEED)
@@ -601,7 +602,7 @@ abstract class SQL extends DataSource{
 		}
 		return false;
 	}
-	static function nestBinding($sql,$binds){
+	function nestBinding($sql,$binds){
 		do{
 			list($sql,$binds) = self::pointBindingLoop($sql,(array)$binds);
 			list($sql,$binds) = self::nestBindingLoop($sql,(array)$binds);
