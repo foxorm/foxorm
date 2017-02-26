@@ -133,7 +133,11 @@ abstract class SQL extends DataSource{
 			$this->adaptPrimaryKey($type,$id,$primaryKey);
 		return $this->getInsertID();
 	}
+	
 	function readQuery($type,$id,$primaryKey='id',$uniqTextKey='uniq',$obj,array $scope=null){
+		if(!$id){
+			return false;
+		}
 		if($uniqTextKey&&!Cast::isInt($id))
 			$primaryKey = $uniqTextKey;
 		$table = $this->escTable($type);
@@ -272,6 +276,7 @@ abstract class SQL extends DataSource{
 				}
 				$this->logger->logChrono(sprintf("%.2f", $chrono).' '.$u);
 			}
+			$this->affectedRows = $statement->rowCount();
 			if(!$this->performingSystemQuery&&($lid=$this->pdo->lastInsertId())){
 				$this->lastInsertId = $lid;
 			}
@@ -285,7 +290,6 @@ abstract class SQL extends DataSource{
 					//$this->logger->log($e->getMessage());
 				}
 			}
-			$this->affectedRows = $statement->rowCount();
 			if($statement->columnCount()){
 				$fetchStyle = ( isset( $options['fetchStyle'] ) ) ? $options['fetchStyle'] : NULL;
 				if ( isset( $options['noFetch'] ) && $options['noFetch'] ) {
