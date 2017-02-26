@@ -582,6 +582,7 @@ class Mysql extends SQL{
 	}
 	
 	protected function createQueryExec($table,$pk,$insertcolumns,$insertSlots,$insertvalues){
+		$ignore = isset($this->ignoreOnDuplicateKey)&&$this->ignoreOnDuplicateKey?'IGNORE ':'';
 		$query = 'INSERT '.$ignore.'INTO '.$table.' ( '.implode(',',$insertcolumns).' ) VALUES ( '. implode(',',$insertSlots).' ) ';
 		if($this->updateOnDuplicateKey){
 			$up = [];
