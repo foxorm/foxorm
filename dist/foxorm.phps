@@ -1242,7 +1242,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 				foreach($calls as $call){
 					if(is_string($call)){
 						call_user_func([$row,$call], $this);
-						$row->trigger($call, $recursive, $flow);
+						$row->_triggerRowEvents($call, $recursive, $flow);
 					}
 					else{
 						call_user_func($call, $row, $this);
@@ -8243,6 +8243,9 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 		return $this;
 	}
 	function trigger($event, $recursive=false, $flow=null){
+		$this->_table->trigger($event, $this, $recursive, $flow);
+	}
+	function _triggerRowEvents($event, $recursive=false, $flow=null){
 		if(isset($this->__events[$event]))
 			$this->db->triggerExec($this->__events[$event], $this->_type, $event, $this, $recursive, $flow);
 		return $this;
