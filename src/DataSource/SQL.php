@@ -143,7 +143,7 @@ abstract class SQL extends DataSource{
 		$id = $this->defaultValue;
 		$pk = $this->esc($primaryKey);
 		$table   = $this->escTable($type);
-		$onDuplicateUpdate = isset($this->enableInsertIgnore)&&$this->enableInsertIgnore;
+		$onDuplicateUpdate = isset($this->updateOnDuplicateKey)&&$this->updateOnDuplicateKey;
 		
 		//collect columns
 		$insertcolumns = [];
@@ -249,7 +249,7 @@ abstract class SQL extends DataSource{
 		$count = count($rows);
 		
 		//build query
-		$ignore = isset($this->ignoreOnDuplicateKey)&&$this->ignoreOnDuplicateKey?'IGNORE ':'';
+		$ignore = isset($this->enableInsertIgnore)&&$this->enableInsertIgnore?'IGNORE ':'';
 		$query = 'INSERT '.$ignore.'INTO '.$table.' ( '.implode(',',$insertcolumns).' ) VALUES ';
 		$query .= rtrim(str_repeat('('. implode(',',$insertSlots).'),',$count),',');
 		if($onDuplicateUpdate){
