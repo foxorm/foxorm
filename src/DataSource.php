@@ -778,7 +778,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 				foreach($calls as $call){
 					if(is_string($call)){
 						call_user_func([$row,$call], $this);
-						$row->trigger($call, $recursive, $flow);
+						$row->_triggerRowEvents($call, $recursive, $flow);
 					}
 					else{
 						call_user_func($call, $row, $this);

@@ -424,6 +424,9 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 		return $this;
 	}
 	function trigger($event, $recursive=false, $flow=null){
+		$this->_table->trigger($event, $this, $recursive, $flow);
+	}
+	function _triggerRowEvents($event, $recursive=false, $flow=null){
 		if(isset($this->__events[$event]))
 			$this->db->triggerExec($this->__events[$event], $this->_type, $event, $this, $recursive, $flow);
 		return $this;
