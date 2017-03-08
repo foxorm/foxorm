@@ -332,6 +332,7 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 	
 	function store(){
 		$this->_table[] = $this;
+		return $this;
 	}
 	
 	function load(){
