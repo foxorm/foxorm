@@ -442,4 +442,8 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 		$e->setDB($this->db);
 		throw $e;
 	}
+	
+	function getTable(){
+		return $this->_table;
+	}
 }
