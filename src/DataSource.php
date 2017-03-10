@@ -334,10 +334,10 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 				break;
 				
 				case 'cast':
-					$cast[substr($k,6)] = $v;
+					$cast[$k] = $v;
 				continue 2;
 				case 'func':
-					$func[substr($k,6)] = $v;
+					$func[$k] = $v;
 				continue 2;
 				
 				default:
