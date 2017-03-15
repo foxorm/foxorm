@@ -720,8 +720,8 @@ class SQL extends DataTable{
 		$this->select->sort($desc);
 		return $this;
 	}
-	function compose_limit($limit){
-		$this->select->limit($limit);
+	function compose_limit($limit,$offset=null){
+		call_user_func_array([$this->select,'limit'],func_get_args());
 		return $this;
 	}
 	function compose_offset($offset){
