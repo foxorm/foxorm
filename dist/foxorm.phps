@@ -798,10 +798,10 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 				break;
 				
 				case 'cast':
-					$cast[substr($k,6)] = $v;
+					$cast[$k] = $v;
 				continue 2;
 				case 'func':
-					$func[substr($k,6)] = $v;
+					$func[$k] = $v;
 				continue 2;
 				
 				default:
@@ -1546,6 +1546,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		return $x;
 	}
 }
+
 }
 #DataSource/SQL.php
 
@@ -5342,6 +5343,7 @@ class Select extends Where {
 		return $this->_get_params('with','select', 'tables', 'where', 'group_by', 'having', 'order_by');
 	}
 }
+
 }
 #SqlComposer/Delete.php
 
@@ -7209,8 +7211,8 @@ class SQL extends DataTable{
 		$this->select->sort($desc);
 		return $this;
 	}
-	function compose_limit($limit){
-		$this->select->limit($limit);
+	function compose_limit($limit,$offset=null){
+		call_user_func_array([$this->select,'limit'],func_get_args());
 		return $this;
 	}
 	function compose_offset($offset){
@@ -7438,6 +7440,7 @@ class SQL extends DataTable{
 		return $this->select->notLike($columns, $searchPattern, $search, $and);
 	}
 }
+
 }
 #DataTable/Mysql.php
 
@@ -8151,6 +8154,7 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 	
 	function store(){
 		$this->_table[] = $this;
+		return $this;
 	}
 	
 	function load(){
@@ -8260,7 +8264,12 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 		$e->setDB($this->db);
 		throw $e;
 	}
+	
+	function getTable(){
+		return $this->_table;
+	}
 }
+
 }
 #Entity/RulableInterface.php
 
