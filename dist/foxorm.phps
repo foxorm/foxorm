@@ -805,6 +805,8 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 				continue 2;
 				
 				default:
+					if($meta)
+						continue 2;
 					if(is_array($v)||($v instanceof Collection)){
 						$relation = 'many';
 					}
