@@ -537,7 +537,6 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		foreach($refsOne as $rc=>$rf){
 			$obj->$rc = $properties[$rc] = $rf;
 		}
-		
 		if(!$update||!isset($obj->_modified)||$obj->_modified!==false){
 			$modified = true;
 			if($update){

@@ -1001,7 +1001,6 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		foreach($refsOne as $rc=>$rf){
 			$obj->$rc = $properties[$rc] = $rf;
 		}
-		
 		if(!$update||!isset($obj->_modified)||$obj->_modified!==false){
 			$modified = true;
 			if($update){
@@ -6151,11 +6150,7 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 	}
 	function offsetSet($id,$obj){
 		if(is_array($obj)){
-			$tmp = $obj;
-			$obj = $this->dataSource->entityFactory($this->name);
-			foreach($tmp as $k=>$v)
-				$obj->$k = $v;
-			unset($tmp);
+			$obj = $this->dataSource->entity($this->name,$obj);
 		}
 		if(!$id){
 			$id = $this->putRow($obj);
@@ -6489,6 +6484,7 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 		$this->dataSource->adaptStructure($this->name,$properties,$this->getPrimaryKey(),$this->getUniqTextKey(),$cast);
 	}
 }
+
 }
 #DataTable/SQL.php
 
