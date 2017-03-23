@@ -1167,6 +1167,19 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 		$data = $this->dataFilter($data,$preFilter,true);
 		return $this->entity($name,$data,$filter,$reversedFilter);
 	}
+	function simpleEntity($name,array $data=[],$filter=null,$reversedFilter=false){
+		foreach($data as $k=>$v){
+			list($key,$meta,$xclusive,$push) = $this->extractMetaFromKey($k);
+			switch($meta){
+				case 'one':
+				case 'many':
+				case 'many2many':
+					unset($data[$k]);
+				break;
+			}
+		}
+		return $this->entity($name,$data=null,$filter=null,$reversedFilter=false);
+	}
 	function entity($name,$data=null,$filter=null,$reversedFilter=false){
 		return $this->entityMaker($name,$data,$filter,$reversedFilter,true);
 	}
@@ -6357,6 +6370,9 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 		return $this->getAllIterator();
 	}
 	
+	function simpleEntity($data=null,$filter=null,$reversedFilter=false){
+		return $this->dataSource->simpleEntity($this->name,$data,$filter,$reversedFilter);
+	}
 	function entity($data=null,$filter=null,$reversedFilter=false){
 		return $this->dataSource->entity($this->name,$data,$filter,$reversedFilter);
 	}
