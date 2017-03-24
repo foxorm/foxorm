@@ -1178,7 +1178,7 @@ abstract class DataSource implements \ArrayAccess,\Iterator,\JsonSerializable{
 				break;
 			}
 		}
-		return $this->entity($name,$data=null,$filter=null,$reversedFilter=false);
+		return $this->entity($name,$data,$filter,$reversedFilter);
 	}
 	function entity($name,$data=null,$filter=null,$reversedFilter=false){
 		return $this->entityMaker($name,$data,$filter,$reversedFilter,true);
