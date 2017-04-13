@@ -290,7 +290,7 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 		return $this->getAllIterator();
 	}
 	
-	function simpleEntity($data=null,$filter=null,$reversedFilter=false){
+	function simpleEntity($data=[],$filter=null,$reversedFilter=false){
 		return $this->dataSource->simpleEntity($this->name,$data,$filter,$reversedFilter);
 	}
 	function entity($data=null,$filter=null,$reversedFilter=false){
