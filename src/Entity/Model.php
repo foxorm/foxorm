@@ -108,7 +108,7 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 					$relationFk = $relationKey.'_'.$relationTable->getPrimaryKey();
 					if(isset($this->data[$relationFk])&&$this->data[$relationFk]){
 						$relationId = $this->data[$relationFk];
-						$this->__data[$k] = $relationTable[$relationId];
+						$this->__data[$k] = $relationId ? $relationTable[$relationId] : null;
 					}
 					else{
 						$this->__data[$k] = $this->one($relationKey);
