@@ -1120,8 +1120,11 @@ abstract class SQL extends DataSource{
 		$pk = $table->getPrimaryKey();
 		$pko = $colType.'_'.$pk;
 		$column = $this->esc($pk);
-		$table->where($typeE.'.'.$column.' = ?',[$obj->$pko]);
-		return $table->getRow();
+		
+		if($obj->$pko){
+			$table->where($typeE.'.'.$column.' = ?',[$obj->$pko]);
+			return $table->getRow();
+		}
 	}
 	function one2many($obj,$type){
 		$tb = $this->findEntityTable($obj);
