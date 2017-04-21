@@ -2685,8 +2685,11 @@ abstract class SQL extends DataSource{
 		$pk = $table->getPrimaryKey();
 		$pko = $colType.'_'.$pk;
 		$column = $this->esc($pk);
-		$table->where($typeE.'.'.$column.' = ?',[$obj->$pko]);
-		return $table->getRow();
+		
+		if($obj->$pko){
+			$table->where($typeE.'.'.$column.' = ?',[$obj->$pko]);
+			return $table->getRow();
+		}
 	}
 	function one2many($obj,$type){
 		$tb = $this->findEntityTable($obj);
@@ -3172,6 +3175,7 @@ abstract class SQL extends DataSource{
 	
 	abstract protected function explain($sql,$bindings=[]);
 }
+
 }
 #DataSource/Mysql.php
 
@@ -6370,7 +6374,7 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 		return $this->getAllIterator();
 	}
 	
-	function simpleEntity($data=null,$filter=null,$reversedFilter=false){
+	function simpleEntity($data=[],$filter=null,$reversedFilter=false){
 		return $this->dataSource->simpleEntity($this->name,$data,$filter,$reversedFilter);
 	}
 	function entity($data=null,$filter=null,$reversedFilter=false){
@@ -7944,7 +7948,7 @@ class Model implements Observer,Box,StateFollower,\ArrayAccess,\JsonSerializable
 					$relationFk = $relationKey.'_'.$relationTable->getPrimaryKey();
 					if(isset($this->data[$relationFk])&&$this->data[$relationFk]){
 						$relationId = $this->data[$relationFk];
-						$this->__data[$k] = $relationTable[$relationId];
+						$this->__data[$k] = $relationId ? $relationTable[$relationId] : null;
 					}
 					else{
 						$this->__data[$k] = $this->one($relationKey);
