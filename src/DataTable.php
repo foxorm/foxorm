@@ -72,7 +72,7 @@ abstract class DataTable implements \ArrayAccess,\Iterator,\Countable,\JsonSeria
 	function offsetExists($id){
 		return (bool)$this->readId($id);
 	}
-	function offsetGet($id){
+	function &offsetGet($id){
 		if(!$this->useCache||!array_key_exists($id,$this->data))
 			$row = $this->readRow($id);
 		else
