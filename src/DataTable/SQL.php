@@ -489,6 +489,9 @@ class SQL extends DataTable{
 		return $this;
 	}
 	
+	function sync($rows, $columns=null, $mtimeColumn='mtime', $delete=true){
+		return $this->dataSource->sync($this->name, $rows, $columns, $mtimeColumn, $delete);
+	}
 	
 	function __call($f,$args){
 		if(method_exists($this,$m='compose_'.$f)){
