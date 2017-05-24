@@ -1291,11 +1291,7 @@ abstract class SQL extends DataSource{
 		if(empty($rows)) return;
 		
 		if(!isset($columns)){
-			$firstRow = current($rows);
-			$columns = [];
-			foreach($firstRow as $k=>$v){
-				$columns[] = $k;
-			}
+			$columns = array_keys(current($rows));
 		}
 		
 		$mtime = time();
