@@ -1311,11 +1311,11 @@ abstract class SQL extends DataSource{
 		foreach($rows as $row){
 			$q = clone $query;
 			foreach($columns as $col){
-				if(!isset($row->$col)||$row->$col===''){
+				if(!isset($row[$col])||$row[$col]===''){
 					$q->where($col.' IS NULL');
 				}
 				else{
-					$q->where($col.' = ?',  $row->$col);
+					$q->where($col.' = ?',  [ $row[$col] ]);
 				}
 			}
 			$entity = $table->simpleEntity($row);
