@@ -1326,7 +1326,7 @@ abstract class SQL extends DataSource{
 		}
 		
 		if($delete){
-			$this->execute('DELETE FROM '.$this->escTable($tableName).' WHERE '.$mtimeColumn.' != ?',[$mtime]);
+			$this->execute('DELETE FROM '.$this->escTable($tableName).' WHERE COALESCE('.$mtimeColumn.') != ?',[$mtime]);
 		}
 		
 		return true;
