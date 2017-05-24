@@ -1287,6 +1287,56 @@ abstract class SQL extends DataSource{
 		)',$params);
 	}
 	
+	function sync($tableName, $rows, $columns=null, $mtimeColumn='mtime', $delete=true){
+		if(empty($rows)) return;
+		
+		if(!isset($columns)){
+			$firstRow = current($rows);
+			$columns = [];
+			foreach($firstRow as $k=>$v){
+				$columns[] = $k;
+			}
+		}
+		
+		$mtime = time();
+		$table = $this[$tableName];
+		$pk = $table->getPrimaryKey();
+		
+		$query = $table
+			->unSelect()
+			->select($pk)
+			->limit(1)
+		;
+		
+		foreach($rows as $row){
+			$q = clone $query;
+			foreach($columns as $col){
+				if(!isset($row->$col)||$row->$col===''){
+					$q->where($col.' IS NULL');
+				}
+				else{
+					$q->where($col.' = ?',  $row->$col);
+				}
+			}
+			$entity = $table->simpleEntity($row);
+			$entity->$mtimeColumn = $mtime;
+			$id = $q->getCell();
+			if($id){
+				$table[$id] = $entity;
+			}
+			else{
+				$table[] = $entity;
+			}
+		}
+		
+		if($delete){
+			$this->execute('DELETE FROM '.$this->escTable($tableName).' WHERE '.$mtimeColumn.' != ?',[$mtime]);
+		}
+		
+		return true;
+		
+	}
+	
 	function getFtsTableSuffix(){
 		return $this->ftsTableSuffix;
 	}
