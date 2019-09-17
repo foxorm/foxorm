@@ -1,0 +1,70 @@
+<vars basic />
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>FoxORM</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+	<base href="<?=$BASE_HREF?>">
+	<link href="css/style<?=$VERSIONING?>.css" rel="stylesheet" type="text/css">
+	<link href="img/favicon.ico" rel="icon" type="image/x-icon">
+	<link type="text/plain" rel="author" href="humans.txt">
+	<link rel="search" type="application/opensearchdescription+xml" href="opensearch.xml" title="FoxORM">
+	<canonicalize "$GLOBALS['redcat']['canonicalDomains']" http-substitution static />
+	
+	<link href="css/freeow.css" rel="stylesheet" type="text/css">
+	<link href="css/reset-print.css" rel="stylesheet" type="text/css" media="print">
+	<link href="css/animations.css" rel="stylesheet" type="text/css">
+	
+</head>
+<body>
+	<header>
+		<nav class="main svelte">
+			<a href="" class="logo">
+				<span class="fox">Fox</span><span class="cat">ORM</span>
+			</a>
+			<ul>
+				<li><a href="getting-started">Getting Started</a></li>
+				<li><a href="documentation">Documentation</a></li>
+				<li><a href="https://github.com/foxorm/foxorm" target="_blank">Github</a></li>
+			</ul>
+		</nav>
+	</header>
+	<main></main>
+	<footer>
+		<incorpore "redcat-powered.btml">
+		<div class="foot">
+			
+			<div>
+				 FoxORM · Created by <a href="https://github.com/surikat" target="_blank">Jo/Surikat</a>
+			</div>
+			
+			<div>
+				 <img src="img/foxorm-24.png"> The ORM of <a href="https://redcatphp.com" target="_blank">RedCatPHP</a>
+			</div>
+			
+			<div class="license">
+				Code licensed under
+				<a href="https://opensource.org/licenses/mit-license.html" target="_blank">MIT License</a>
+			</div>
+			
+		</div>
+	</footer>
+	
+	<script type="text/javascript" src="packages/bower-asset/js/js.js"></script>
+	<script type="text/javascript" src="js/js.alias-asset.js"></script>
+<!--
+	<script type="text/javascript" src="js/js.config.js"></script>
+-->
+	<script type="text/javascript">
+		<?if($templix->devJs):?>$js.dev=true;<?endif;?>
+		$js.min=true;
+		<?if($redcat->dev['chrono']):?>
+			if(console) console.info('<?=RedCat\Debug\Chrono::output()?>');
+		<?endif;?>
+		$js('js/script');
+		$js('js/page-scroll');
+	</script>
+</body>
+</html>

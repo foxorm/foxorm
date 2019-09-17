@@ -1,0 +1,39 @@
+body>main.download{
+	>article>h1{
+		@?include icon(download);
+	}
+	a{
+		@media(min-width:480px){
+			font-size:1.2em;
+			padding-left:0.8em;
+		}
+		@media(min-width:600px){
+			font-size:1.4em;
+		}
+		display:block;
+		margin-left:1.2em;
+		margin-top:0.1em;
+		margin-bottom:0.1em;
+		padding-top:0.1em;
+		padding-bottom:0.1em;
+	}
+	a.latest-release{
+		@?include icon(download);
+	}
+	a.dev-release{
+		@?include icon(flask);
+	}
+	a.all-release{
+		@?include icon(archive);
+	}
+	.align-left{
+		float:left;
+	}
+	.align-right{
+		float:right;
+	}
+	img{
+		border-radius: 4px;
+		@include box-shadow(0 6px 12px rgba(0,0,0,.175));
+	}
+}

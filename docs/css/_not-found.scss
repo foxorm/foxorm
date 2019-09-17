@@ -1,0 +1,16 @@
+body>main.not-found{
+	.error-actions a{
+		&:nth-child(1){
+			@?include icon(chevron-left);
+		}
+		&:nth-child(2){
+			@?include icon(envelope);
+		}
+	}
+	.error-details{
+		
+	}
+	.error-actions{
+
+	}
+}

@@ -1,0 +1,28 @@
+.svelte,
+.svelte-wrap >*{
+	width: 100%;
+	max-width:1080px;
+	position: relative;
+	margin:0 auto;
+	clear:both;
+}
+.half-left{
+	float:left;
+	width:94%;
+	@media(min-width: 768px){
+		width:44%;
+	}
+	margin-right:2%;
+	margin-left:4%;
+}
+.half-right{
+	float:right;
+	width:94%;
+	@media(min-width: 768px){
+		width:44%;
+	}
+	margin-right:4%;
+}
+.justify{
+	text-align:justify;
+}

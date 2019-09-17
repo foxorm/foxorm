@@ -1,1 +1,1 @@
-$js.alias({"jquery":"packages/bower-asset/jquery/dist/jquery"});
+$js.alias({"jquery":"js/jquery"});
