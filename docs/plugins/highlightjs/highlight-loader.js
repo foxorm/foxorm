@@ -1,4 +1,4 @@
-$js(['jquery','/plugins/highlightjs/highlight.js'],function(){
+$js(['jquery','plugins/highlightjs/highlight.js'],function(){
 	hljs.configure({useBR: true});
 	var listLanguages = [];
 	$('code').each(function(i, block){
@@ -12,13 +12,13 @@ $js(['jquery','/plugins/highlightjs/highlight.js'],function(){
 		}
 		var load = function(){
 			hljs.highlightBlock(block);
-			
+
 		};
 		if(lang){
 			if(hljs.listLanguages().indexOf(lang)===-1
 				&&listLanguages.indexOf(lang)===-1){
 				listLanguages.push(lang);
-				$.get('/plugins/highlightjs/languages/'+lang+'.js',function(func){
+				$.get('plugins/highlightjs/languages/'+lang+'.js',function(func){
 					eval('hljs.registerLanguage(lang,'+func+');');
 					load();
 				},'text');
