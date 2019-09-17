@@ -1,1 +1,0 @@
-$js.alias({"jquery":"js/jquery"});
